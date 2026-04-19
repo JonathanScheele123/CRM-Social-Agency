@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# vim swap files
+*.swp
+*.swo
+
+/app/generated/prisma

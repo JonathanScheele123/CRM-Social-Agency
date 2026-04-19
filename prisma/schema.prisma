@@ -1,0 +1,327 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+
+enum Rolle {
+  ADMIN
+  KUNDE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwort      String?
+  rolle         Rolle     @default(KUNDE)
+  aktiv         Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  zugriffe KundenprofilZugriff[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model KundenprofilZugriff {
+  id             String   @id @default(cuid())
+  userId         String
+  kundenprofilId String
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kundenprofilId])
+}
+
+// ─── Kundenprofil ───────────────────────────────────────────────────────────
+
+model Kundenprofil {
+  id        String   @id @default(cuid())
+  kundenNr  Int      @unique @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Kontaktdaten
+  unternehmensname     String?
+  ansprechpartner      String?
+  geschaeftsadresse    String?
+  emailAnsprechpartner String?
+  branche              String?
+  telefonnummer        String?
+  webseite             String?
+  emailDirekt          String?
+  socialMediaKanaele   String?
+
+  // Freigabe
+  freigabeVerantwortlicher      String?
+  emailFreigabeVerantwortlicher String?
+  cloudLink                     String?
+  zusatzlinks                   String?
+
+  // Vertrag & Status
+  vertragsstart                     DateTime?
+  statusKunde                       String?
+  kundenKategorie                   String?
+  letzterKontakt                    DateTime?
+  kundenzufriedenheit               String?
+  vertraglicheFestgelegtePostAnzahl Float?
+  archiv                            String?
+  kundenfeedback                    String?
+  notizenIntern                     String?
+
+  // Content-Planung
+  contentIdeen    String?
+  contentPlan     String[]
+  postingKalender String?
+
+  // Rechtliches
+  mitarbeiterImBildRechtlichGeklaert String?
+  mitarbeiterImBildRechtlichGeregelt String?
+  mitarbeiterNichtZeigen             String?
+  welcheMitarbeiterNichtZeigen       String?
+  sensibleBereiche                   String?
+  welcheBereicheNichtZeigen          String?
+
+  // Drehtag
+  drehtageAnWelchenTagen String[]
+  drehtageUhrzeiten      String?
+  ansprechpartnerDrehtag String?
+  einschraenkungenVorOrt String?
+  selbstAuftreten        String?
+  wunschdatum            DateTime?
+
+  // Marke & Zielgruppe
+  kurzbeschreibung         String?
+  kernwerte                String?
+  alleinstellungsmerkmale  String?
+  haeufigsteProbleme       String?
+  haeufigsteEinwaende      String?
+  zielgruppeOnline         String?
+  wasKundenLieben          String?
+  zielgruppe               String?
+  hauptziel                String?
+
+  // Produkte & Events
+  heroProdukte             String?
+  wiederkehrendeProdukte   String?
+  eventsNaechsteMonate     String?
+
+  // Sonstiges
+  besonderheitenPlanung        String?
+  herausforderungen            String?
+  vorbereiteteFragenBesprechen String?
+
+  // Relations
+  zugriffe        KundenprofilZugriff[]
+  contentIdeen_   ContentIdea[]
+  kalender        KalenderEintrag[]
+  archivEintraege ArchivEintrag[]
+  kpis            KPI[]
+  kundendaten     Kundendaten[]
+}
+
+// ─── Content-Ideen ──────────────────────────────────────────────────────────
+
+model ContentIdea {
+  id             String   @id @default(cuid())
+  kundenprofilId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  titel                    String?
+  beschreibung             String?
+  plattform                String[]
+  contentTyp               String?
+  eingereichtVon           String?
+  einreichungsdatum        DateTime?
+  prioritaet               String?
+  status                   String?
+  notizen                  String?
+  gewuenschtesPostingDatum DateTime?
+  captionText              String?
+  dateizugriff             String?
+
+  kundenprofil Kundenprofil    @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+  kommentare   IdeenKommentar[]
+}
+
+model IdeenKommentar {
+  id            String      @id @default(cuid())
+  contentIdeaId String
+  text          String
+  autorTyp      String      // "Kunde" | "Agentur"
+  autorName     String?
+  createdAt     DateTime    @default(now())
+
+  contentIdea ContentIdea @relation(fields: [contentIdeaId], references: [id], onDelete: Cascade)
+}
+
+// ─── Kalender ───────────────────────────────────────────────────────────────
+
+model KalenderEintrag {
+  id             String   @id @default(cuid())
+  kundenprofilId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  titel             String?
+  beschreibung      String?
+  plattform         String[]
+  contentTyp        String?
+  eingereichtVon    String?
+  einreichungsdatum DateTime?
+  prioritaet        String?
+  notizen           String?
+  captionText       String?
+  dateizugriff      String?
+  geplantAm         DateTime?
+  gepostet          Boolean  @default(false)
+
+  // Freigabe
+  freigabeStatus    String   @default("Ausstehend") // Ausstehend | Freigegeben | Abgelehnt | Überarbeitung
+  freigabeKommentar String?
+  freigegebenAm     DateTime?
+
+  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+}
+
+// ─── Archiv ─────────────────────────────────────────────────────────────────
+
+model ArchivEintrag {
+  id             String   @id @default(cuid())
+  kundenprofilId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  titel             String?
+  beschreibung      String?
+  plattform         String[]
+  contentTyp        String?
+  eingereichtVon    String?
+  einreichungsdatum DateTime?
+  prioritaet        String?
+  notizen           String?
+  captionText       String?
+  dateizugriff      String?
+  archivdatum       DateTime?
+  gepostetAm        DateTime?
+
+  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+}
+
+// ─── KPIs / Monitoring ──────────────────────────────────────────────────────
+
+model KPI {
+  id             String   @id @default(cuid())
+  kpiNr          Int      @unique @default(autoincrement())
+  kundenprofilId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  monatJahr String?
+  plattform String?
+
+  reichweite     Int?
+  impressionen   Int?
+  follower       Int?
+  engagementRate Float?
+  kommentare     Int?
+  likes          Int?
+  shares         Int?
+  saves          Int?
+  klicks         Int?
+
+  reichweiteVormonat     Int?
+  impressionenVormonat   Int?
+  followerVormonat       Int?
+  engagementRateVormonat Float?
+  kommentareVormonat     Int?
+  likesVormonat          Int?
+  sharesVormonat         Int?
+  savesVormonat          Int?
+  klicksVormonat         Int?
+
+  reichweiteVor2M     Int?
+  impressionenVor2M   Int?
+  followerVor2M       Int?
+  engagementRateVor2M Float?
+  kommentareVor2M     Int?
+  likesVor2M          Int?
+  sharesVor2M         Int?
+  savesVor2M          Int?
+  klicksVor2M         Int?
+
+  analyseKommentar      String?
+  handlungsempfehlungen String?
+  statusMonitoring      String?
+  reportGesendet        Boolean @default(false)
+  kpiTyp                String?
+  anomalieErkennung     String?
+
+  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+}
+
+// ─── Kundendaten ────────────────────────────────────────────────────────────
+
+model Kundendaten {
+  id             String   @id @default(cuid())
+  kundenprofilId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  beschreibung    String?
+  inhalt          String?
+  veraltet        Boolean  @default(false)
+  datum           DateTime?
+  tags            String[]
+  hinzugefuegtVon String?
+  anhaenge        String[]
+
+  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+}
