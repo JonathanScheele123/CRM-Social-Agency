@@ -10,7 +10,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js && wrangler pages deploy .open-next/assets"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
