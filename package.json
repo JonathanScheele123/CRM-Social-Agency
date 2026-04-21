@@ -5,13 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "build:cf": "prisma generate && next build && npx opennextjs-cloudflare build && rm -rf .open-next/deploy && mkdir -p .open-next/deploy && cp -r .open-next/assets/. .open-next/deploy/ && cp .open-next/worker.js .open-next/deploy/_worker.js && cp -r .open-next/cloudflare .open-next/deploy/ && cp -r .open-next/middleware .open-next/deploy/ && cp -r .open-next/server-functions .open-next/deploy/ && cp -r .open-next/.build .open-next/deploy/",
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "deploy": "opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js && wrangler pages deploy .open-next/assets"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
