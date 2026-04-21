@@ -10,7 +10,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "deploy": "opennextjs-cloudflare deploy"
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -36,6 +36,7 @@
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.2",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
