@@ -20,11 +20,13 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
-  passwort      String?
-  rolle         Rolle     @default(KUNDE)
-  aktiv         Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  passwort           String?
+  rolle              Rolle     @default(KUNDE)
+  aktiv              Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  passwortGeaendert  Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   accounts Account[]
   sessions Session[]
@@ -71,12 +73,24 @@ model KundenprofilZugriff {
   id             String   @id @default(cuid())
   userId         String
   kundenprofilId String
+  kundenRolle    String   @default("Inhaber")
   createdAt      DateTime @default(now())
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
 
   @@unique([userId, kundenprofilId])
+}
+
+// ─── Formular-Config ────────────────────────────────────────────────────────
+
+model FormularConfig {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  name       String
+  introText  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // ─── Kundenprofil ───────────────────────────────────────────────────────────
@@ -97,10 +111,16 @@ model Kundenprofil {
   webseite             String?
   emailDirekt          String?
   socialMediaKanaele   String?
+  linkInstagram        String?
+  linkFacebook         String?
+  linkTikTok           String?
+  linkYouTube          String?
 
   // Freigabe
-  freigabeVerantwortlicher      String?
-  emailFreigabeVerantwortlicher String?
+  freigabeVerantwortlicher       String?
+  emailFreigabeVerantwortlicher  String?
+  freigabeVerantwortlicher2      String?
+  emailFreigabeVerantwortlicher2 String?
   cloudLink                     String?
   zusatzlinks                   String?
 
@@ -111,6 +131,11 @@ model Kundenprofil {
   letzterKontakt                    DateTime?
   kundenzufriedenheit               String?
   vertraglicheFestgelegtePostAnzahl Float?
+  limitReel                         Int?
+  limitStory                        Int?
+  limitBild                         Int?
+  limitKarussell                    Int?
+  limitGesperrtAb                   DateTime?
   archiv                            String?
   kundenfeedback                    String?
   notizenIntern                     String?
@@ -157,6 +182,36 @@ model Kundenprofil {
   herausforderungen            String?
   vorbereiteteFragenBesprechen String?
 
+  // Content-Strategie-Fragebogen (zusätzlich)
+  zusammenarbeitZiel             String?
+  hervorgehobeneDienstleistungen String?
+  zielgruppeOnlineKanaele        String[]
+  irrtuemerBranche               String?
+  geruechteVorurteile            String?
+  haeufigsteKundenfragen         String?
+  typischeFehlerKunden           String?
+  einSacheZielgruppe             String?
+  bestPracticesTipps             String?
+  contentThemen                  String[]
+  contentThemenZusatz            String?
+  contentStil                    String[]
+
+  // Start-Seite Konfiguration
+  startVideoUrl String?
+  startFaqItems String[]
+
+  // DSGVO
+  dsgvoLoeschdatum          DateTime?
+  dsgvoStatus               String?    // "aktiv" | "eingeschraenkt" | "loeschung_beantragt"
+  keinMarketing             Boolean   @default(false)
+  verarbeitungEinschraenken Boolean   @default(false)
+
+  // Sichtbarkeit für Kunden
+  kpisFreigegeben Boolean @default(false)
+
+  // Automatische E-Mails
+  feedbackEmailGesendetAm DateTime?
+
   // Relations
   zugriffe        KundenprofilZugriff[]
   contentIdeen_   ContentIdea[]
@@ -164,6 +219,52 @@ model Kundenprofil {
   archivEintraege ArchivEintrag[]
   kpis            KPI[]
   kundendaten     Kundendaten[]
+}
+
+// ─── Audit-Log ──────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  aktion        String   // "exportiert" | "anonymisiert" | "geloescht" | "geaendert" | "zugegriffen"
+  entitaet      String   // "Kundenprofil"
+  entitaetId    String
+  benutzerEmail String?
+  details       String?
+}
+
+// ─── Globale FAQ ─────────────────────────────────────────────────────────────
+
+model GlobalFaqItem {
+  id          String   @id @default(cuid())
+  frage       String
+  reihenfolge Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Fehlerprotokoll ────────────────────────────────────────────────────────
+
+model FehlerLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  fehlerCode  String?
+  nachricht   String
+  kontext     String?
+  url         String?
+  benutzerTyp String?  // "Admin" | "Kunde" | "System"
+}
+
+// ─── E-Mail-Vorlagen ────────────────────────────────────────────────────────
+
+model EmailVorlage {
+  id           String   @id @default(cuid())
+  name         String
+  beschreibung String?
+  betreff      String
+  html         String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 // ─── Content-Ideen ──────────────────────────────────────────────────────────
@@ -222,6 +323,8 @@ model KalenderEintrag {
   dateizugriff      String?
   geplantAm         DateTime?
   gepostet          Boolean  @default(false)
+  gepostetAm        DateTime?
+  archiviert        Boolean  @default(false)
 
   // Freigabe
   freigabeStatus    String   @default("Ausstehend") // Ausstehend | Freigegeben | Abgelehnt | Überarbeitung
@@ -252,7 +355,19 @@ model ArchivEintrag {
   archivdatum       DateTime?
   gepostetAm        DateTime?
 
-  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+  kundenprofil Kundenprofil    @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+  kommentare   ArchivKommentar[]
+}
+
+model ArchivKommentar {
+  id              String        @id @default(cuid())
+  archivEintragId String
+  text            String
+  autorTyp        String        // "Kunde" | "Agentur"
+  autorName       String?
+  createdAt       DateTime      @default(now())
+
+  archivEintrag ArchivEintrag @relation(fields: [archivEintragId], references: [id], onDelete: Cascade)
 }
 
 // ─── KPIs / Monitoring ──────────────────────────────────────────────────────
@@ -305,6 +420,19 @@ model KPI {
   anomalieErkennung     String?
 
   kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+  dateien      KPIDatei[]
+}
+
+model KPIDatei {
+  id        String   @id @default(cuid())
+  kpiId     String
+  name      String
+  url       String
+  typ       String   // "video", "pdf", "presentation", "other"
+  groesse   Int?
+  createdAt DateTime @default(now())
+
+  kpi KPI @relation(fields: [kpiId], references: [id], onDelete: Cascade)
 }
 
 // ─── Kundendaten ────────────────────────────────────────────────────────────

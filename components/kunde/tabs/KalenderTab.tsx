@@ -1,7 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import React, { useMemo, useState } from "react";
 import KalenderGrafik, { KalenderGrafikEintrag } from "@/components/shared/KalenderGrafik";
+import { useT, useLang } from "@/lib/i18n";
+
+function fileIdAusDriveLink(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function DriveVorschau({ dateizugriff }: { dateizugriff: string | null }) {
+  const [fehler, setFehler] = useState(false);
+  const fileId = fileIdAusDriveLink(dateizugriff);
+  if (!fileId || fehler) return null;
+  return (
+    <img
+      src={`/api/admin/drive/thumbnail?fileId=${fileId}`}
+      alt="Vorschau"
+      onError={() => setFehler(true)}
+      className="mt-2 w-full max-w-[200px] h-auto rounded-lg object-cover border border-divider"
+    />
+  );
+}
 
 type KalenderEintrag = {
   id: string;
@@ -15,195 +36,203 @@ type KalenderEintrag = {
   dateizugriff: string | null;
   prioritaet: string | null;
   notizen: string | null;
+  freigabeStatus: string;
+  freigabeKommentar: string | null;
+  freigegebenAm: Date | null;
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-500/20 text-pink-300",
-  Facebook: "bg-blue-500/20 text-blue-300",
-  TikTok: "bg-gray-500/20 text-gray-300",
-  YouTube: "bg-red-500/20 text-red-300",
-  Sonstiges: "bg-gray-600/20 text-gray-400",
+  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
+  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
+  Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
 };
 
-const PRIORITAET_FARBEN: Record<string, string> = {
-  Hoch: "bg-red-500/20 text-red-300 border-red-500/30",
-  Mittel: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  Niedrig: "bg-gray-500/20 text-gray-400 border-gray-500/30",
-};
+function tagBeginn(d: Date): number {
+  const t = new Date(d);
+  t.setHours(0, 0, 0, 0);
+  return t.getTime();
+}
 
 function eintragFarbe(eintrag: KalenderEintrag): string {
-  if (eintrag.gepostet) return "border-l-4 border-l-green-500 bg-green-950/20";
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
-  if (eintrag.geplantAm) {
-    const datum = new Date(eintrag.geplantAm);
-    datum.setHours(0, 0, 0, 0);
-    if (datum.getTime() === heute.getTime()) return "border-l-4 border-l-blue-500 bg-blue-950/20";
-    if (datum < heute) return "border-l-4 border-l-orange-500 bg-orange-950/10 opacity-75";
-  }
-  return "border-l-4 border-l-gray-700";
+  const heute = tagBeginn(new Date());
+  const morgen = heute + 86400000;
+  if (!eintrag.geplantAm) return "border-l-4 border-l-divider";
+  const datum = tagBeginn(new Date(eintrag.geplantAm));
+  if (datum === heute) return "border-l-4 border-l-green-500";
+  if (datum === morgen) return "border-l-4 border-l-blue-500";
+  return "border-l-4 border-l-divider";
 }
 
-function dotFarbe(eintrag: KalenderEintrag): string {
-  if (eintrag.gepostet) return "bg-green-500";
-  const heute = new Date();
-  heute.setHours(0, 0, 0, 0);
-  if (eintrag.geplantAm) {
-    const datum = new Date(eintrag.geplantAm);
-    datum.setHours(0, 0, 0, 0);
-    if (datum.getTime() === heute.getTime()) return "bg-blue-500";
-    if (datum < heute) return "bg-orange-500";
-  }
-  return "bg-gray-500";
+function dotFarbe(): string {
+  return "bg-accent";
 }
 
-function datumFormatieren(datum: Date | null): string {
+function istSichtbar(eintrag: KalenderEintrag): boolean {
+  if (eintrag.gepostet) return false;
+  if (!eintrag.geplantAm) return false;
+  const gestern = tagBeginn(new Date()) - 86400000;
+  return tagBeginn(new Date(eintrag.geplantAm)) >= gestern;
+}
+
+function datumFormatieren(datum: Date | null, locale: string): string {
   if (!datum) return "–";
-  return new Date(datum).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Date(datum).toLocaleDateString(locale, {
+    weekday: "short", day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 }
 
-export default function KalenderTab({ eintraege }: { eintraege: KalenderEintrag[] }) {
-  const [filter, setFilter] = useState<"alle" | "offen" | "gepostet">("alle");
-  const [ansicht, setAnsicht] = useState<"liste" | "kalender">("liste");
+type SocialLinks = {
+  instagram?: string | null;
+  facebook?: string | null;
+  tiktok?: string | null;
+  youtube?: string | null;
+};
+
+const IconInstagram = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+  </svg>
+);
+
+const IconFacebook = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const IconTikTok = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.67a8.18 8.18 0 004.78 1.52V6.73a4.85 4.85 0 01-1.01-.04z" />
+  </svg>
+);
+
+const IconYouTube = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" />
+  </svg>
+);
+
+const SOCIAL_CONFIG: { key: keyof SocialLinks; label: string; cls: string; icon: React.ReactNode }[] = [
+  { key: "instagram", label: "Instagram", cls: "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white shadow-sm shadow-pink-500/30", icon: <IconInstagram /> },
+  { key: "facebook",  label: "Facebook",  cls: "bg-[#1877F2] text-white shadow-sm shadow-blue-500/30",                                                   icon: <IconFacebook />  },
+  { key: "tiktok",    label: "TikTok",    cls: "bg-black text-white shadow-sm shadow-black/20",                                                           icon: <IconTikTok />    },
+  { key: "youtube",   label: "YouTube",   cls: "bg-[#FF0000] text-white shadow-sm shadow-red-500/30",                                                     icon: <IconYouTube />   },
+];
+
+export default function KalenderTab({ eintraege: alleEintraege, onNavigiereZuContent, socialLinks }: { eintraege: KalenderEintrag[]; onNavigiereZuContent?: () => void; socialLinks?: SocialLinks }) {
+  const t = useT();
+  const { lang } = useLang();
+  const dateLocale = lang === "de" ? "de-DE" : "en-GB";
   const [ausgewaehlt, setAusgewaehlt] = useState<KalenderEintrag | null>(null);
 
-  const gefiltert = eintraege.filter((e) => {
-    if (filter === "offen") return !e.gepostet;
-    if (filter === "gepostet") return e.gepostet;
-    return true;
-  });
+  const eintraege = useMemo(
+    () => alleEintraege,
+    [alleEintraege]
+  );
 
-  const grafikEintraege: KalenderGrafikEintrag[] = eintraege.map((e) => ({
+  const listeEintraege = useMemo(
+    () =>
+      eintraege
+        .filter(istSichtbar)
+        .sort((a, b) => {
+          if (!a.geplantAm) return 1;
+          if (!b.geplantAm) return -1;
+          return new Date(a.geplantAm).getTime() - new Date(b.geplantAm).getTime();
+        }),
+    [eintraege]
+  );
+
+  const grafikEintraege: KalenderGrafikEintrag[] = eintraege.map(e => ({
     id: e.id,
     titel: e.titel,
     geplantAm: e.geplantAm,
-    dotFarbe: dotFarbe(e),
+    dotFarbe: dotFarbe(),
+    dateizugriff: e.dateizugriff,
   }));
 
   function eintragById(id: string) {
-    return eintraege.find((e) => e.id === id) ?? null;
+    return eintraege.find(e => e.id === id) ?? null;
   }
 
   return (
-    <div>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        <div className="flex gap-1">
-          {(["alle", "offen", "gepostet"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filter === f
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
+    <div className="space-y-8">
+      {/* Kalender */}
+      <div>
+        <KalenderGrafik
+          eintraege={grafikEintraege}
+          onEintragKlick={id => setAusgewaehlt(eintragById(id))}
+        />
+      </div>
+
+      {/* Liste */}
+      <div>
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-divider">
+          <h3 className="font-medium text-sm text-fg">{t.kalenderTab.bevorstehend}</h3>
+          <span className="ml-auto text-xs bg-elevated text-muted px-2 py-0.5 rounded-full">{listeEintraege.length}</span>
+          {socialLinks && SOCIAL_CONFIG.filter(s => socialLinks[s.key]).map(s => (
+            <a
+              key={s.key}
+              href={socialLinks[s.key]!}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={s.label}
+              onClick={e => e.stopPropagation()}
+              className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition-all hover:scale-110 hover:brightness-110 active:scale-95 ${s.cls}`}
             >
-              {f === "alle" ? "Alle" : f === "offen" ? "Ausstehend" : "Gepostet"}
+              {s.icon}
+            </a>
+          ))}
+          {onNavigiereZuContent && (
+            <button
+              onClick={onNavigiereZuContent}
+              className="text-xs text-accent border border-accent/30 hover:border-accent hover:bg-accent/5 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              {t.kalenderTab.contentIdeen}
             </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 mb-3">
+          {[
+            { farbe: "bg-blue-500",  glow: "glow-blue",  label: t.kalenderTab.morgen },
+            { farbe: "bg-green-500", glow: "glow-green", label: t.kalenderTab.heute },
+          ].map(l => (
+            <div key={l.label} className="flex items-center gap-2 text-xs text-muted">
+              <span className={`w-2.5 h-2.5 rounded-sm ${l.farbe} ${l.glow}`} />
+              {l.label}
+            </div>
           ))}
         </div>
 
-        {/* Ansicht-Toggle */}
-        <div className="ml-auto flex bg-gray-800 rounded-lg p-0.5 gap-0.5">
-          <button
-            onClick={() => setAnsicht("liste")}
-            className={`px-3 py-1 rounded-md text-xs transition-colors ${
-              ansicht === "liste" ? "bg-gray-600 text-white" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            Liste
-          </button>
-          <button
-            onClick={() => setAnsicht("kalender")}
-            className={`px-3 py-1 rounded-md text-xs transition-colors ${
-              ansicht === "kalender" ? "bg-gray-600 text-white" : "text-gray-400 hover:text-white"
-            }`}
-          >
-            Kalender
-          </button>
-        </div>
-      </div>
-
-      {/* Legende */}
-      {ansicht === "liste" && (
-        <div className="flex flex-wrap items-center gap-4 mb-4">
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-3 h-3 rounded-sm bg-blue-500/40 border-l-2 border-blue-500" />
-            Heute geplant
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-3 h-3 rounded-sm bg-green-500/20 border-l-2 border-green-500" />
-            Gepostet
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-3 h-3 rounded-sm bg-orange-950/20 border-l-2 border-orange-500" />
-            Überfällig
-          </div>
-        </div>
-      )}
-
-      {/* Kalender-Ansicht */}
-      {ansicht === "kalender" && (
-        <>
-          <div className="flex flex-wrap gap-3 mb-4">
-            {[
-              { farbe: "bg-blue-500", label: "Heute geplant" },
-              { farbe: "bg-green-500", label: "Gepostet" },
-              { farbe: "bg-orange-500", label: "Überfällig" },
-              { farbe: "bg-gray-500", label: "Geplant" },
-            ].map((l) => (
-              <div key={l.label} className="flex items-center gap-1.5 text-xs text-gray-400">
-                <span className={`w-2 h-2 rounded-full ${l.farbe}`} />
-                {l.label}
-              </div>
-            ))}
-          </div>
-          <KalenderGrafik
-            eintraege={grafikEintraege}
-            onEintragKlick={(id) => setAusgewaehlt(eintragById(id))}
-          />
-        </>
-      )}
-
-      {/* Listen-Ansicht */}
-      {ansicht === "liste" && (
-        <div className="space-y-2">
-          {gefiltert.map((eintrag) => (
+        <div className="space-y-2 card-group">
+          {listeEintraege.map(eintrag => (
             <button
               key={eintrag.id}
               onClick={() => setAusgewaehlt(eintrag)}
-              className={`w-full text-left rounded-xl p-4 ${eintragFarbe(eintrag)} bg-gray-900 hover:bg-gray-800 transition-colors`}
+              className={`w-full text-left rounded-2xl p-4 bg-card border border-divider hover:border-muted/40 hover:shadow-sm transition-all ${eintragFarbe(eintrag)}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{eintrag.titel ?? "Ohne Titel"}</p>
+                  <p className="font-medium text-sm text-fg line-clamp-2 break-words">{eintrag.titel ?? t.common.ohneTitle}</p>
                   {eintrag.beschreibung && (
-                    <p className="text-gray-400 text-xs mt-1 line-clamp-2">{eintrag.beschreibung}</p>
+                    <p className="text-muted text-xs mt-1 line-clamp-2">{eintrag.beschreibung}</p>
                   )}
+                  <DriveVorschau dateizugriff={eintrag.dateizugriff} />
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <p className="text-gray-400 text-xs">{datumFormatieren(eintrag.geplantAm)}</p>
+                  <p className="text-muted text-xs">{datumFormatieren(eintrag.geplantAm, dateLocale)}</p>
                   <div className="flex gap-1 flex-wrap justify-end">
-                    {eintrag.plattform.map((p) => (
-                      <span key={p} className={`text-xs px-1.5 py-0.5 rounded-md ${PLATTFORM_FARBEN[p] ?? "bg-gray-700 text-gray-300"}`}>
+                    {eintrag.plattform.map(p => (
+                      <span key={p} className={`text-xs px-1.5 py-0.5 rounded-md ${PLATTFORM_FARBEN[p] ?? "bg-elevated text-muted"}`}>
                         {p}
                       </span>
                     ))}
                     {eintrag.contentTyp && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-gray-700 text-gray-300">
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-elevated text-muted">
                         {eintrag.contentTyp}
-                      </span>
-                    )}
-                    {eintrag.prioritaet && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-md border ${PRIORITAET_FARBEN[eintrag.prioritaet] ?? ""}`}>
-                        {eintrag.prioritaet}
                       </span>
                     )}
                   </div>
@@ -212,69 +241,58 @@ export default function KalenderTab({ eintraege }: { eintraege: KalenderEintrag[
             </button>
           ))}
 
-          {gefiltert.length === 0 && (
-            <div className="text-center py-12 text-gray-500">Keine Einträge vorhanden.</div>
+          {listeEintraege.length === 0 && (
+            <div className="text-center py-10 text-subtle text-sm border border-dashed border-divider rounded-2xl">
+              {t.kalenderTab.keineEintraege}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Detail-Modal */}
       {ausgewaehlt && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4"
+          className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setAusgewaehlt(null)}
         >
           <div
-            className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            className="glass-modal rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto "
+            onClick={e => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
-              <h3 className="font-semibold text-lg">{ausgewaehlt.titel ?? "Ohne Titel"}</h3>
-              <button onClick={() => setAusgewaehlt(null)} className="text-gray-400 hover:text-white ml-3">
-                ✕
-              </button>
+              <h3 className="font-semibold text-lg text-fg">{ausgewaehlt.titel ?? t.common.ohneTitle}</h3>
+              <button onClick={() => setAusgewaehlt(null)} className="text-muted hover:text-fg ml-3 transition-colors">✕</button>
             </div>
             <div className="space-y-3 text-sm">
               {ausgewaehlt.beschreibung && (
                 <div>
-                  <p className="text-gray-400 text-xs mb-1">Beschreibung</p>
-                  <p className="text-gray-200">{ausgewaehlt.beschreibung}</p>
+                  <p className="text-subtle text-xs mb-1">{t.kalenderTab.beschreibung}</p>
+                  <p className="text-fg">{ausgewaehlt.beschreibung}</p>
                 </div>
               )}
               {ausgewaehlt.captionText && (
                 <div>
-                  <p className="text-gray-400 text-xs mb-1">Caption / Text</p>
-                  <p className="text-gray-200 whitespace-pre-wrap">{ausgewaehlt.captionText}</p>
+                  <p className="text-subtle text-xs mb-1">{t.kalenderTab.caption}</p>
+                  <p className="text-fg whitespace-pre-wrap">{ausgewaehlt.captionText}</p>
                 </div>
               )}
               {ausgewaehlt.notizen && (
                 <div>
-                  <p className="text-gray-400 text-xs mb-1">Notizen</p>
-                  <p className="text-gray-200">{ausgewaehlt.notizen}</p>
+                  <p className="text-subtle text-xs mb-1">{t.kalenderTab.notizen}</p>
+                  <p className="text-muted">{ausgewaehlt.notizen}</p>
                 </div>
               )}
-              <div className="flex gap-4 pt-1">
-                <div>
-                  <p className="text-gray-400 text-xs mb-1">Geplant am</p>
-                  <p>{datumFormatieren(ausgewaehlt.geplantAm)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-xs mb-1">Status</p>
-                  <p className={ausgewaehlt.gepostet ? "text-green-400" : "text-yellow-400"}>
-                    {ausgewaehlt.gepostet ? "Gepostet" : "Ausstehend"}
-                  </p>
-                </div>
+              <div className="pt-1">
+                <p className="text-subtle text-xs mb-1">{t.kalenderTab.geplantAm}</p>
+                <p className="text-fg">{datumFormatieren(ausgewaehlt.geplantAm, dateLocale)}</p>
               </div>
               {ausgewaehlt.dateizugriff && (
                 <div>
-                  <p className="text-gray-400 text-xs mb-1">Dateizugriff</p>
-                  <a
-                    href={ausgewaehlt.dateizugriff}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline break-all"
-                  >
-                    Datei öffnen
+                  <p className="text-subtle text-xs mb-1">{t.kalenderTab.vorschau}</p>
+                  <DriveVorschau dateizugriff={ausgewaehlt.dateizugriff} />
+                  <a href={ausgewaehlt.dateizugriff} target="_blank" rel="noopener noreferrer"
+                    className="text-accent hover:underline break-all text-xs mt-1.5 inline-block">
+                    {t.kalenderTab.dateiOeffnen}
                   </a>
                 </div>
               )}

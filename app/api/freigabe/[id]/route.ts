@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
 
-const ERLAUBTE_STATUS = ["Freigegeben", "Abgelehnt", "Überarbeitung"];
+const ERLAUBTE_STATUS = ["Freigegeben", "Abgelehnt", "Ausstehend"];
 
 export async function PATCH(
   req: NextRequest,

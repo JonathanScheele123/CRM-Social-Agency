@@ -31,7 +31,7 @@ type Props = {
 };
 
 const inputKlasse =
-  "w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2.5 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors";
+  "w-full bg-elevated border border-divider text-fg rounded-xl px-4 py-2.5 text-sm placeholder:text-subtle focus:outline-none focus:border-accent transition-colors";
 
 export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: Props) {
   const router = useRouter();
@@ -90,16 +90,16 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-          <h3 className="font-semibold">{bearbeiten ? "Eintrag bearbeiten" : "Neuer Kundendaten-Eintrag"}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+    <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-modal rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto " onClick={(e) => e.stopPropagation()}>
+        <div className="p-5 border-b border-divider flex items-center justify-between">
+          <h3 className="font-semibold text-fg">{bearbeiten ? "Eintrag bearbeiten" : "Neuer Kundendaten-Eintrag"}</h3>
+          <button onClick={onClose} className="text-muted hover:text-fg transition-colors">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-1.5">Beschreibung / Titel</label>
+            <label className="block text-sm text-muted mb-1.5">Beschreibung / Titel</label>
             <input
               type="text"
               value={form.beschreibung}
@@ -110,7 +110,7 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1.5">Inhalt</label>
+            <label className="block text-sm text-muted mb-1.5">Inhalt</label>
             <textarea
               value={form.inhalt}
               onChange={(e) => setForm((p) => ({ ...p, inhalt: e.target.value }))}
@@ -120,7 +120,7 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Kategorie / Tags</label>
+            <label className="block text-sm text-muted mb-2">Kategorie / Tags</label>
             <div className="flex flex-wrap gap-2">
               {TAGS.map((tag) => (
                 <button
@@ -129,8 +129,8 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
                   onClick={() => toggleTag(tag)}
                   className={`px-3 py-1.5 rounded-lg text-xs border transition-colors ${
                     form.tags.includes(tag)
-                      ? "bg-blue-600 border-blue-500 text-white"
-                      : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500"
+                      ? "bg-accent border-accent text-white"
+                      : "bg-elevated border-divider text-muted hover:border-muted/60 hover:text-fg"
                   }`}
                 >
                   {tag}
@@ -141,7 +141,7 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm text-gray-300 mb-1.5">Datum</label>
+              <label className="block text-sm text-muted mb-1.5">Datum</label>
               <input
                 type="date"
                 value={form.datum}
@@ -150,7 +150,7 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-300 mb-1.5">Hinzugefügt von</label>
+              <label className="block text-sm text-muted mb-1.5">Hinzugefügt von</label>
               <input
                 type="text"
                 value={form.hinzugefuegtVon}
@@ -166,26 +166,26 @@ export default function KundendatenModal({ kundenprofilId, eintrag, onClose }: P
               type="checkbox"
               checked={form.veraltet}
               onChange={(e) => setForm((p) => ({ ...p, veraltet: e.target.checked }))}
-              className="w-4 h-4 rounded accent-blue-600"
+              className="w-4 h-4 rounded accent-[var(--accent)]"
             />
-            <span className="text-sm text-gray-300">Als veraltet markieren</span>
+            <span className="text-sm text-muted">Als veraltet markieren</span>
           </label>
 
           {fehler && (
-            <p className="text-red-400 text-sm bg-red-950 border border-red-800 rounded-xl px-3 py-2">{fehler}</p>
+            <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2">{fehler}</p>
           )}
 
           <div className="flex gap-2 pt-1">
             {bearbeiten && (
-              <button type="button" onClick={handleLoeschen} className="px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-950/30 transition-colors">
+              <button type="button" onClick={handleLoeschen} className="px-4 py-2.5 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                 Löschen
               </button>
             )}
             <div className="flex gap-2 ml-auto">
-              <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">
+              <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm bg-elevated text-fg hover:opacity-80 transition-opacity border border-divider">
                 Abbrechen
               </button>
-              <button type="submit" disabled={laden} className="px-5 py-2.5 rounded-xl text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium transition-colors">
+              <button type="submit" disabled={laden} className="px-5 py-2.5 rounded-xl text-sm bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-medium transition-colors">
                 {laden ? "..." : bearbeiten ? "Speichern" : "Erstellen"}
               </button>
             </div>

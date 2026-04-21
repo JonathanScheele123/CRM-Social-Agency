@@ -1,8 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import KalenderEintragModal from "./KalenderEintragModal";
 import KalenderGrafik, { KalenderGrafikEintrag } from "@/components/shared/KalenderGrafik";
+import { useT, useLang } from "@/lib/i18n";
+
+const IconInstagram = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+  </svg>
+);
+const IconFacebook = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+const IconTikTok = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.67a8.18 8.18 0 004.78 1.52V6.73a4.85 4.85 0 01-1.01-.04z" />
+  </svg>
+);
+const IconYouTube = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+    <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" />
+  </svg>
+);
+
+type SocialLinks = { instagram?: string | null; facebook?: string | null; tiktok?: string | null; youtube?: string | null };
+
+const SOCIAL_CONFIG: { key: keyof SocialLinks; label: string; cls: string; icon: React.ReactNode }[] = [
+  { key: "instagram", label: "Instagram", cls: "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white shadow-sm shadow-pink-500/30", icon: <IconInstagram /> },
+  { key: "facebook",  label: "Facebook",  cls: "bg-[#1877F2] text-white shadow-sm shadow-blue-500/30",                                                   icon: <IconFacebook />  },
+  { key: "tiktok",    label: "TikTok",    cls: "bg-black text-white shadow-sm shadow-black/20",                                                           icon: <IconTikTok />    },
+  { key: "youtube",   label: "YouTube",   cls: "bg-[#FF0000] text-white shadow-sm shadow-red-500/30",                                                     icon: <IconYouTube />   },
+];
+
+function fileIdAusDriveLink(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ?? url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+function DriveVorschau({ dateizugriff, className }: { dateizugriff: string | null; className?: string }) {
+  const [fehler, setFehler] = useState(false);
+  const fileId = fileIdAusDriveLink(dateizugriff);
+  if (!fileId || fehler) return null;
+  return (
+    <img
+      src={`/api/admin/drive/thumbnail?fileId=${fileId}`}
+      alt="Vorschau"
+      onError={() => setFehler(true)}
+      className={className ?? "mt-2 w-full max-w-[200px] h-auto rounded-lg object-cover border border-divider"}
+    />
+  );
+}
 
 type KalenderEintrag = {
   id: string;
@@ -21,25 +72,35 @@ type KalenderEintrag = {
   freigegebenAm: Date | null;
 };
 
-const FREIGABE_CONFIG: Record<string, { badge: string; row: string; dot: string }> = {
-  Ausstehend:    { badge: "bg-blue-500/20 text-blue-300 border-blue-500/30",       row: "border-l-blue-500",   dot: "bg-blue-500" },
-  Freigegeben:   { badge: "bg-green-500/20 text-green-300 border-green-500/30",    row: "border-l-green-500",  dot: "bg-green-500" },
-  Abgelehnt:     { badge: "bg-red-500/20 text-red-300 border-red-500/30",          row: "border-l-red-500",    dot: "bg-red-500" },
-  Überarbeitung: { badge: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", row: "border-l-yellow-500", dot: "bg-yellow-500" },
-};
+
+function datumFarbe(eintrag: { geplantAm: Date | null }): string {
+  const heute = tagBeginn(new Date());
+  const morgen = heute + 86400000;
+  if (!eintrag.geplantAm) return "border-l-divider";
+  const d = tagBeginn(new Date(eintrag.geplantAm));
+  if (d === heute) return "border-l-green-500";
+  if (d === morgen) return "border-l-blue-500";
+  return "border-l-divider";
+}
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-500/20 text-pink-300",
-  Facebook:  "bg-blue-500/20 text-blue-300",
-  TikTok:    "bg-gray-500/20 text-gray-300",
-  YouTube:   "bg-red-500/20 text-red-300",
-  Sonstiges: "bg-gray-600/20 text-gray-400",
+  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
+  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
+  Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
 };
 
-function datumFormatieren(d: Date | null) {
+function tagBeginn(d: Date) {
+  const t = new Date(d);
+  t.setHours(0, 0, 0, 0);
+  return t.getTime();
+}
+
+function datumFormatieren(d: Date | null, locale: string) {
   if (!d) return "–";
-  return new Date(d).toLocaleDateString("de-DE", {
-    day: "2-digit", month: "2-digit", year: "numeric",
+  return new Date(d).toLocaleDateString(locale, {
+    weekday: "short", day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
 }
@@ -47,162 +108,166 @@ function datumFormatieren(d: Date | null) {
 export default function AdminKalenderTab({
   eintraege,
   kundenprofilId,
+  onNavigiereZuIdeen,
+  socialLinks,
 }: {
   eintraege: KalenderEintrag[];
   kundenprofilId: string;
+  onNavigiereZuIdeen?: () => void;
+  socialLinks?: SocialLinks;
 }) {
-  const [filter, setFilter] = useState<"alle" | "Ausstehend" | "Freigegeben" | "Überarbeitung" | "Abgelehnt">("alle");
-  const [ansicht, setAnsicht] = useState<"liste" | "kalender">("liste");
+  const t = useT();
+  const { lang } = useLang();
+  const dateLocale = lang === "de" ? "de-DE" : "en-GB";
+  const [lokalEintraege, setLokalEintraege] = useState<KalenderEintrag[]>(eintraege);
   const [modalOffen, setModalOffen] = useState(false);
   const [ausgewaehlt, setAusgewaehlt] = useState<KalenderEintrag | null>(null);
 
-  const gefiltert = eintraege.filter((e) =>
-    filter === "alle" ? true : e.freigabeStatus === filter
-  );
+  // Sync when router.refresh() delivers fresh server data
+  useEffect(() => { setLokalEintraege(eintraege); }, [eintraege]);
 
-  const ausstehend = eintraege.filter((e) => e.freigabeStatus === "Ausstehend").length;
-  const ueberarbeitung = eintraege.filter((e) => e.freigabeStatus === "Überarbeitung").length;
+  function eintragGespeichert(gespeichert: KalenderEintrag) {
+    setLokalEintraege(prev => {
+      const idx = prev.findIndex(e => e.id === gespeichert.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = gespeichert;
+        return next;
+      }
+      return [...prev, gespeichert];
+    });
+  }
 
-  const grafikEintraege: KalenderGrafikEintrag[] = eintraege.map((e) => ({
+  function eintragGeloescht(id: string) {
+    setLokalEintraege(prev => prev.filter(e => e.id !== id));
+  }
+
+  const grafikEintraege: KalenderGrafikEintrag[] = lokalEintraege.map((e) => ({
     id: e.id,
     titel: e.titel,
     geplantAm: e.geplantAm,
-    dotFarbe: e.gepostet
-      ? "bg-green-400"
-      : (FREIGABE_CONFIG[e.freigabeStatus] ?? FREIGABE_CONFIG.Ausstehend).dot,
+    dotFarbe: "bg-accent",
+    dateizugriff: e.dateizugriff,
   }));
 
+  const listeEintraege = useMemo(() => {
+    const heute = tagBeginn(new Date()) - 86400000;
+    return lokalEintraege
+      .filter((e) => {
+        if (e.gepostet) return false;
+        if (!e.geplantAm) return false;
+        return tagBeginn(new Date(e.geplantAm)) >= heute;
+      })
+      .sort((a, b) => {
+        if (!a.geplantAm) return 1;
+        if (!b.geplantAm) return -1;
+        return new Date(a.geplantAm).getTime() - new Date(b.geplantAm).getTime();
+      });
+  }, [lokalEintraege]);
+
   function eintragById(id: string) {
-    return eintraege.find((e) => e.id === id) ?? null;
+    return lokalEintraege.find((e) => e.id === id) ?? null;
+  }
+
+  function oeffnen(eintrag: KalenderEintrag) {
+    setAusgewaehlt(eintrag);
+    setModalOffen(true);
   }
 
   return (
-    <div>
-      {/* Statusübersicht */}
-      {(ausstehend > 0 || ueberarbeitung > 0) && (
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {ausstehend > 0 && (
-            <div className="flex items-center gap-2 bg-blue-950/40 border border-blue-700/40 rounded-xl px-3 py-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-              <span className="text-blue-300">{ausstehend} warten auf Freigabe</span>
-            </div>
-          )}
-          {ueberarbeitung > 0 && (
-            <div className="flex items-center gap-2 bg-yellow-950/40 border border-yellow-700/40 rounded-xl px-3 py-2 text-sm">
-              <span className="w-2 h-2 rounded-full bg-yellow-500 shrink-0" />
-              <span className="text-yellow-300">{ueberarbeitung} Überarbeitungen nötig</span>
-            </div>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => { setAusgewaehlt(null); setModalOffen(true); }}
+          className="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded-lg transition-colors ml-auto"
+        >
+          {t.adminKalender.eintrag}
+        </button>
+      </div>
+
+      {/* Kalender */}
+      <div>
+        <KalenderGrafik
+          eintraege={grafikEintraege}
+          onEintragKlick={(id) => {
+            const e = eintragById(id);
+            if (e) oeffnen(e);
+          }}
+        />
+      </div>
+
+      {/* Liste */}
+      <div>
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-divider">
+          <h3 className="font-medium text-sm text-fg">{t.adminKalender.bevorstehend}</h3>
+          <span className="ml-auto text-xs bg-elevated text-muted px-2 py-0.5 rounded-full">{listeEintraege.length}</span>
+          {socialLinks && SOCIAL_CONFIG.filter(s => socialLinks[s.key]).map(s => (
+            <a
+              key={s.key}
+              href={socialLinks[s.key]!}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={s.label}
+              onClick={e => e.stopPropagation()}
+              className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition-all hover:scale-110 hover:brightness-110 active:scale-95 ${s.cls}`}
+            >
+              {s.icon}
+            </a>
+          ))}
+          {onNavigiereZuIdeen && (
+            <button
+              onClick={onNavigiereZuIdeen}
+              className="text-xs text-accent border border-accent/30 hover:border-accent hover:bg-accent/5 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              {t.adminKalender.contentIdeen}
+            </button>
           )}
         </div>
-      )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <div className="flex gap-1 flex-wrap">
-          {(["alle", "Ausstehend", "Freigegeben", "Überarbeitung", "Abgelehnt"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filter === f ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-400 hover:text-white"
-              }`}
-            >
-              {f === "alle" ? "Alle" : f}
-            </button>
+        <div className="flex flex-wrap items-center gap-4 mb-3">
+          {[
+            { farbe: "bg-green-500", glow: "glow-green", label: t.adminKalender.heute },
+            { farbe: "bg-blue-500",  glow: "glow-blue",  label: t.adminKalender.morgen },
+          ].map((l) => (
+            <div key={l.label} className="flex items-center gap-2 text-xs text-muted">
+              <span className={`w-2.5 h-2.5 rounded-sm ${l.farbe} ${l.glow}`} />
+              {l.label}
+            </div>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-          {/* Ansicht-Toggle */}
-          <div className="flex bg-gray-800 rounded-lg p-0.5 gap-0.5">
-            <button
-              onClick={() => setAnsicht("liste")}
-              className={`px-3 py-1 rounded-md text-xs transition-colors ${
-                ansicht === "liste" ? "bg-gray-600 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              Liste
-            </button>
-            <button
-              onClick={() => setAnsicht("kalender")}
-              className={`px-3 py-1 rounded-md text-xs transition-colors ${
-                ansicht === "kalender" ? "bg-gray-600 text-white" : "text-gray-400 hover:text-white"
-              }`}
-            >
-              Kalender
-            </button>
-          </div>
-
-          <button
-            onClick={() => { setAusgewaehlt(null); setModalOffen(true); }}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
-          >
-            + Eintrag
-          </button>
-        </div>
-      </div>
-
-      {/* Kalender-Ansicht */}
-      {ansicht === "kalender" && (
-        <>
-          <div className="flex flex-wrap gap-3 mb-4">
-            {(["Ausstehend", "Freigegeben", "Überarbeitung", "Abgelehnt"] as const).map((s) => (
-              <div key={s} className="flex items-center gap-1.5 text-xs text-gray-400">
-                <span className={`w-2 h-2 rounded-full ${FREIGABE_CONFIG[s].dot}`} />
-                {s}
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5 text-xs text-gray-400">
-              <span className="w-2 h-2 rounded-full bg-green-400" />
-              Gepostet
-            </div>
-          </div>
-          <KalenderGrafik
-            eintraege={grafikEintraege}
-            onEintragKlick={(id) => {
-              const e = eintragById(id);
-              if (e) { setAusgewaehlt(e); setModalOffen(true); }
-            }}
-          />
-        </>
-      )}
-
-      {/* Listen-Ansicht */}
-      {ansicht === "liste" && (
-        <div className="space-y-2">
-          {gefiltert.map((eintrag) => {
-            const cfg = FREIGABE_CONFIG[eintrag.freigabeStatus] ?? FREIGABE_CONFIG.Ausstehend;
+        <div className="space-y-2 card-group">
+          {listeEintraege.map((eintrag) => {
             return (
               <button
                 key={eintrag.id}
-                onClick={() => { setAusgewaehlt(eintrag); setModalOffen(true); }}
-                className={`w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl p-4 border-l-4 ${cfg.row} transition-all`}
+                onClick={() => oeffnen(eintrag)}
+                className={`w-full text-left bg-card border border-divider hover:border-muted/40 rounded-2xl p-4 border-l-4 ${datumFarbe(eintrag)} transition-all`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium text-sm truncate">{eintrag.titel ?? "Ohne Titel"}</p>
-                      {eintrag.gepostet && (
-                        <span className="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-md shrink-0">Gepostet</span>
+                  <div className="flex-1 min-w-0 flex gap-3">
+                    {/* Vorschau links – auf allen Bildschirmgrößen */}
+                    {eintrag.dateizugriff && (
+                      <div className="shrink-0 w-12 md:w-16 aspect-square rounded-lg overflow-hidden border border-divider self-start">
+                        <DriveVorschau
+                          dateizugriff={eintrag.dateizugriff}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-fg line-clamp-2 break-words mb-0.5">{eintrag.titel ?? t.common.ohneTitle}</p>
+                      {eintrag.beschreibung && (
+                        <p className="text-muted text-xs line-clamp-1">{eintrag.beschreibung}</p>
                       )}
                     </div>
-                    {eintrag.beschreibung && (
-                      <p className="text-gray-400 text-xs line-clamp-1">{eintrag.beschreibung}</p>
-                    )}
-                    {eintrag.freigabeKommentar && (
-                      <p className="text-yellow-300/70 text-xs mt-1 line-clamp-1">
-                        ↩ &quot;{eintrag.freigabeKommentar}&quot;
-                      </p>
-                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <p className="text-gray-400 text-xs">{datumFormatieren(eintrag.geplantAm)}</p>
+                    <p className="text-muted text-xs">{datumFormatieren(eintrag.geplantAm, dateLocale)}</p>
                     <div className="flex gap-1 flex-wrap justify-end">
-                      <span className={`text-xs px-1.5 py-0.5 rounded-md border ${cfg.badge}`}>
-                        {eintrag.freigabeStatus}
-                      </span>
                       {eintrag.plattform.map((p) => (
-                        <span key={p} className={`text-xs px-1.5 py-0.5 rounded-md ${PLATTFORM_FARBEN[p] ?? "bg-gray-700 text-gray-300"}`}>
+                        <span key={p} className={`text-xs px-1.5 py-0.5 rounded-md ${PLATTFORM_FARBEN[p] ?? "bg-elevated text-muted"}`}>
                           {p}
                         </span>
                       ))}
@@ -213,20 +278,21 @@ export default function AdminKalenderTab({
             );
           })}
 
-          {gefiltert.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              {filter === "alle" ? "Noch keine Einträge vorhanden." : `Keine Einträge mit Status „${filter}".`}
+          {listeEintraege.length === 0 && (
+            <div className="text-center py-10 text-subtle text-sm border border-dashed border-divider rounded-2xl">
+              {t.adminKalender.keineEintraege}
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Modal */}
       {modalOffen && (
         <KalenderEintragModal
           kundenprofilId={kundenprofilId}
           eintrag={ausgewaehlt ?? undefined}
           onClose={() => { setModalOffen(false); setAusgewaehlt(null); }}
+          onGespeichert={(e) => { eintragGespeichert(e); setAusgewaehlt(null); }}
+          onGeloescht={eintragGeloescht}
         />
       )}
     </div>

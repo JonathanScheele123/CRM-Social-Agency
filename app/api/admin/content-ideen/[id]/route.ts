@@ -45,6 +45,16 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  await prisma.contentIdea.delete({ where: { id } });
-  return Response.json({ ok: true });
+
+  try {
+    await prisma.contentIdea.delete({ where: { id } });
+    return Response.json({ ok: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("Record to delete does not exist")) {
+      return Response.json({ fehler: "Idee nicht gefunden." }, { status: 404 });
+    }
+    console.error("[DELETE /api/admin/content-ideen]", msg);
+    return Response.json({ fehler: "Fehler beim Löschen." }, { status: 500 });
+  }
 }

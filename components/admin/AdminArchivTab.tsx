@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 import ArchivEintragModal from "./ArchivEintragModal";
+import { useT, useLang } from "@/lib/i18n";
+
+type Kommentar = {
+  id: string;
+  text: string;
+  autorTyp: string;
+  autorName: string | null;
+  createdAt: Date;
+};
 
 type ArchivEintrag = {
   id: string;
@@ -14,14 +23,15 @@ type ArchivEintrag = {
   captionText: string | null;
   dateizugriff: string | null;
   notizen: string | null;
+  kommentare: Kommentar[];
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-500/20 text-pink-300",
-  Facebook:  "bg-blue-500/20 text-blue-300",
-  TikTok:    "bg-gray-500/20 text-gray-300",
-  YouTube:   "bg-red-500/20 text-red-300",
-  Sonstiges: "bg-gray-600/20 text-gray-400",
+  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
+  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
+  Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
 };
 
 export default function AdminArchivTab({
@@ -31,6 +41,8 @@ export default function AdminArchivTab({
   eintraege: ArchivEintrag[];
   kundenprofilId: string;
 }) {
+  const t = useT();
+  const { lang } = useLang();
   const [modalOffen, setModalOffen] = useState(false);
   const [ausgewaehlt, setAusgewaehlt] = useState<ArchivEintrag | null>(null);
   const [suche, setSuche] = useState("");
@@ -47,21 +59,20 @@ export default function AdminArchivTab({
 
   return (
     <div>
-      {/* Toolbar */}
       <div className="flex items-center gap-3 mb-5">
         <input
           type="text"
           value={suche}
           onChange={(e) => setSuche(e.target.value)}
-          placeholder="Suchen..."
-          className="flex-1 bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          placeholder={t.common.suchenPlaceholder}
+          className="flex-1 bg-elevated border border-divider text-fg rounded-xl px-4 py-2 text-sm placeholder:text-subtle focus:outline-none focus:border-accent transition-colors"
         />
-        <span className="text-gray-500 text-sm shrink-0">{gefiltert.length} Einträge</span>
+        <span className="text-subtle text-sm shrink-0">{gefiltert.length} {t.adminDashboard.eintraege}</span>
         <button
           onClick={() => { setAusgewaehlt(null); setModalOffen(true); }}
-          className="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded-lg transition-colors shrink-0"
+          className="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-2 rounded-lg transition-colors shrink-0"
         >
-          + Eintrag
+          {t.adminKalender.eintrag}
         </button>
       </div>
 
@@ -70,32 +81,32 @@ export default function AdminArchivTab({
           <button
             key={eintrag.id}
             onClick={() => { setAusgewaehlt(eintrag); setModalOffen(true); }}
-            className="bg-gray-900 border border-gray-800 hover:border-green-600/50 rounded-xl p-4 text-left transition-all hover:bg-gray-800/50 border-l-4 border-l-green-600"
+            className="bg-card border border-divider hover:border-muted/40 rounded-2xl p-4 text-left transition-all hover:shadow-sm"
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h3 className="font-medium text-sm line-clamp-2 flex-1">
-                {eintrag.titel ?? "Ohne Titel"}
+              <h3 className="font-medium text-sm line-clamp-2 flex-1 text-fg">
+                {eintrag.titel ?? t.common.ohneTitle}
               </h3>
             </div>
             {eintrag.beschreibung && (
-              <p className="text-gray-400 text-xs line-clamp-2 mb-3">{eintrag.beschreibung}</p>
+              <p className="text-muted text-xs line-clamp-2 mb-3">{eintrag.beschreibung}</p>
             )}
             <div className="flex items-center justify-between">
               <div className="flex gap-1.5 flex-wrap">
                 {eintrag.plattform.map((p) => (
-                  <span key={p} className={`text-xs px-1.5 py-0.5 rounded-md ${PLATTFORM_FARBEN[p] ?? "bg-gray-700 text-gray-300"}`}>
+                  <span key={p} className={`text-xs px-1.5 py-0.5 rounded-md ${PLATTFORM_FARBEN[p] ?? "bg-elevated text-muted"}`}>
                     {p}
                   </span>
                 ))}
                 {eintrag.contentTyp && (
-                  <span className="text-xs px-1.5 py-0.5 rounded-md bg-gray-700 text-gray-300">
+                  <span className="text-xs px-1.5 py-0.5 rounded-md bg-elevated text-muted">
                     {eintrag.contentTyp}
                   </span>
                 )}
               </div>
               {eintrag.gepostetAm && (
-                <p className="text-gray-500 text-xs shrink-0 ml-2">
-                  {new Date(eintrag.gepostetAm).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                <p className="text-subtle text-xs shrink-0 ml-2">
+                  {new Date(eintrag.gepostetAm).toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                 </p>
               )}
             </div>
@@ -103,8 +114,8 @@ export default function AdminArchivTab({
         ))}
 
         {gefiltert.length === 0 && (
-          <div className="col-span-3 text-center py-12 text-gray-500">
-            {suche ? "Keine Ergebnisse für diese Suche." : "Noch keine archivierten Beiträge."}
+          <div className="col-span-3 text-center py-12 text-subtle">
+            {suche ? t.common.keineEintraege : t.archivTab.keineEintraege}
           </div>
         )}
       </div>

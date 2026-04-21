@@ -19,9 +19,9 @@ export default async function KundeDetailPage({
       zugriffe: { include: { user: true } },
       contentIdeen_: { orderBy: { createdAt: "desc" }, include: { kommentare: { orderBy: { createdAt: "asc" } } } },
       kalender: { orderBy: { geplantAm: "asc" } },
-      kpis: { orderBy: { createdAt: "desc" } },
+      kpis: { orderBy: { createdAt: "desc" }, include: { dateien: { orderBy: { createdAt: "asc" } } } },
       kundendaten: { orderBy: { createdAt: "desc" } },
-      archivEintraege: { orderBy: { gepostetAm: "desc" } },
+      archivEintraege: { orderBy: { gepostetAm: "desc" }, include: { kommentare: { orderBy: { createdAt: "asc" } } } },
     },
   });
 

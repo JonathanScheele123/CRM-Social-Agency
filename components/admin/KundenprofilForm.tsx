@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-// ─── Typen ──────────────────────────────────────────────────────────────────
+import ThemeToggle from "@/components/ThemeToggle";
+import { useT } from "@/lib/i18n";
 
 export type KundenprofilFormDaten = {
   unternehmensname: string;
@@ -15,17 +15,21 @@ export type KundenprofilFormDaten = {
   webseite: string;
   emailDirekt: string;
   socialMediaKanaele: string;
+  linkInstagram: string;
+  linkFacebook: string;
+  linkTikTok: string;
+  linkYouTube: string;
   freigabeVerantwortlicher: string;
   emailFreigabeVerantwortlicher: string;
   cloudLink: string;
   zusatzlinks: string;
   vertragsstart: string;
-  letzterKontakt: string;
   statusKunde: string;
-  kundenKategorie: string;
-  kundenzufriedenheit: string;
   vertraglicheFestgelegtePostAnzahl: string;
-  archiv: string;
+  limitReel: string;
+  limitStory: string;
+  limitBild: string;
+  limitKarussell: string;
   kundenfeedback: string;
   notizenIntern: string;
   contentIdeen: string;
@@ -64,11 +68,13 @@ export const LEERES_FORMULAR: KundenprofilFormDaten = {
   unternehmensname: "", ansprechpartner: "", geschaeftsadresse: "",
   emailAnsprechpartner: "", branche: "", telefonnummer: "", webseite: "",
   emailDirekt: "", socialMediaKanaele: "",
+  linkInstagram: "", linkFacebook: "", linkTikTok: "", linkYouTube: "",
   freigabeVerantwortlicher: "", emailFreigabeVerantwortlicher: "",
   cloudLink: "", zusatzlinks: "",
-  vertragsstart: "", letzterKontakt: "", statusKunde: "",
-  kundenKategorie: "", kundenzufriedenheit: "",
-  vertraglicheFestgelegtePostAnzahl: "", archiv: "", kundenfeedback: "",
+  vertragsstart: "", statusKunde: "",
+  vertraglicheFestgelegtePostAnzahl: "",
+  limitReel: "", limitStory: "", limitBild: "", limitKarussell: "",
+  kundenfeedback: "",
   notizenIntern: "", contentIdeen: "", contentPlan: [], postingKalender: "",
   besonderheitenPlanung: "",
   mitarbeiterImBildRechtlichGeklaert: "", mitarbeiterImBildRechtlichGeregelt: "",
@@ -83,23 +89,20 @@ export const LEERES_FORMULAR: KundenprofilFormDaten = {
   herausforderungen: "", vorbereiteteFragenBesprechen: "",
 };
 
-// ─── Hilfkomponenten ─────────────────────────────────────────────────────────
-
 function Feld({ label, pflicht, children }: { label: string; pflicht?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm text-gray-300 mb-1.5">
+      <label className="block text-sm font-medium text-fg mb-1.5">
         {label}
-        {pflicht && <span className="text-red-400 ml-0.5">*</span>}
+        {pflicht && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       {children}
     </div>
   );
 }
 
-const inputKlasse = "w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2.5 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors";
+const inputKlasse = "w-full bg-elevated border border-divider text-fg rounded-xl px-4 py-2.5 text-sm placeholder:text-subtle focus:outline-none focus:border-accent transition-colors";
 const textareaKlasse = `${inputKlasse} min-h-[80px] resize-y`;
-const selectKlasse = `${inputKlasse}`;
 
 function TextInput({ name, wert, onChange, placeholder }: {
   name: keyof KundenprofilFormDaten; wert: string; onChange: (n: keyof KundenprofilFormDaten, v: string) => void; placeholder?: string;
@@ -124,7 +127,7 @@ function SelectInput({ name, wert, onChange, optionen }: {
   optionen: string[];
 }) {
   return (
-    <select value={wert} onChange={e => onChange(name, e.target.value)} className={selectKlasse}>
+    <select value={wert} onChange={e => onChange(name, e.target.value)} className={inputKlasse}>
       <option value="">– Bitte wählen –</option>
       {optionen.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
@@ -153,8 +156,8 @@ function MultiCheckbox({ name, wert, onChange, optionen }: {
         <button key={o} type="button" onClick={() => toggle(o)}
           className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
             wert.includes(o)
-              ? "bg-blue-600 border-blue-500 text-white"
-              : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500"
+              ? "bg-accent border-accent text-white"
+              : "bg-elevated border-divider text-muted hover:border-muted/60 hover:text-fg"
           }`}>
           {o}
         </button>
@@ -166,7 +169,7 @@ function MultiCheckbox({ name, wert, onChange, optionen }: {
 function Abschnitt({ titel, children }: { titel: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{titel}</h3>
+      <h3 className="text-xs font-semibold text-subtle uppercase tracking-wider mb-3">{titel}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
     </div>
   );
@@ -176,20 +179,6 @@ function VollBreit({ children }: { children: React.ReactNode }) {
   return <div className="sm:col-span-2">{children}</div>;
 }
 
-// ─── Tabs ────────────────────────────────────────────────────────────────────
-
-const TABS = [
-  { id: "grunddaten", label: "Grunddaten" },
-  { id: "freigabe", label: "Freigabe & Vertrag" },
-  { id: "content", label: "Content & Planung" },
-  { id: "drehtag", label: "Drehtag" },
-  { id: "rechtliches", label: "Rechtliches" },
-  { id: "marke", label: "Marke & Ziele" },
-  { id: "produkte", label: "Produkte & Events" },
-];
-
-// ─── Haupt-Component ─────────────────────────────────────────────────────────
-
 type Props = {
   initialDaten?: Partial<KundenprofilFormDaten>;
   modus: "erstellen" | "bearbeiten";
@@ -198,6 +187,19 @@ type Props = {
 
 export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props) {
   const router = useRouter();
+  const t = useT();
+  const kpf = t.kundenprofilForm;
+
+  const TABS = [
+    { id: "grunddaten", label: kpf.grunddaten },
+    { id: "freigabe", label: kpf.freigabeVertrag },
+    { id: "content", label: kpf.contentPlanung },
+    { id: "drehtag", label: kpf.drehtag },
+    { id: "rechtliches", label: kpf.rechtliches },
+    { id: "marke", label: kpf.markeZiele },
+    { id: "produkte", label: kpf.produkteEvents },
+  ];
+
   const [aktuellerTab, setAktuellerTab] = useState("grunddaten");
   const [laden, setLaden] = useState(false);
   const [fehler, setFehler] = useState("");
@@ -230,8 +232,8 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
     setLaden(false);
 
     if (!res.ok) {
-      const data = await res.json();
-      setFehler(data.fehler ?? "Ein Fehler ist aufgetreten.");
+      const data = await res.json().catch(() => ({}));
+      setFehler((data as { fehler?: string }).fehler ?? "Ein Fehler ist aufgetreten.");
       return;
     }
 
@@ -245,7 +247,7 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
   }
 
   async function handleLoeschen() {
-    if (!confirm("Kunden wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
+    if (!confirm(kpf.loeschenBestaetigung)) return;
     const res = await fetch(`/api/admin/kunden/${kundeId}`, { method: "DELETE" });
     if (res.ok) {
       router.push("/dashboard");
@@ -254,31 +256,31 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800 px-4 sm:px-6 py-4 sticky top-0 bg-gray-950 z-10">
+    <div className="min-h-screen text-fg">
+      <header className="border-b border-divider px-4 sm:px-6 py-4 sticky top-0 glass-bar z-10">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => router.back()} className="text-gray-400 hover:text-white text-sm shrink-0">
+            <button onClick={() => router.back()} className="text-muted hover:text-fg text-sm shrink-0 transition-colors">
               ← Zurück
             </button>
-            <span className="text-gray-600">/</span>
-            <h1 className="font-medium truncate">
-              {modus === "erstellen" ? "Neuer Kunde" : (formDaten.unternehmensname || "Kunde bearbeiten")}
+            <span className="text-subtle">/</span>
+            <h1 className="font-semibold text-fg truncate">
+              {modus === "erstellen" ? kpf.neuerKunde : (formDaten.unternehmensname || kpf.kundeBearbeiten)}
             </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {modus === "bearbeiten" && (
               <button type="button" onClick={handleLoeschen}
-                className="text-red-400 hover:text-red-300 text-sm px-3 py-1.5 rounded-lg hover:bg-red-950/30 transition-colors">
+                className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-sm px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                 Löschen
               </button>
             )}
+            <ThemeToggle />
             <button type="submit" form="kunden-form" disabled={laden || gespeichert}
               className={`text-sm px-4 py-2 rounded-xl font-medium transition-colors ${
                 gespeichert
                   ? "bg-green-600 text-white cursor-default"
-                  : "bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white"
+                  : "bg-accent hover:bg-accent-hover disabled:opacity-50 text-white"
               }`}>
               {gespeichert ? "✓ Gespeichert" : laden ? "Speichern..." : modus === "erstellen" ? "Erstellen" : "Speichern"}
             </button>
@@ -286,15 +288,14 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
         </div>
       </header>
 
-      {/* Tab-Navigation */}
-      <div className="border-b border-gray-800 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto flex gap-0 overflow-x-auto scrollbar-hide">
+      <div className="border-b border-divider px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto flex gap-0 overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab.id} type="button" onClick={() => setAktuellerTab(tab.id)}
               className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 aktuellerTab === tab.id
-                  ? "border-blue-500 text-blue-400"
-                  : "border-transparent text-gray-400 hover:text-white"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-muted hover:text-fg"
               }`}>
               {tab.label}
             </button>
@@ -302,76 +303,76 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
         </div>
       </div>
 
-      {/* Form */}
       <form id="kunden-form" onSubmit={handleSubmit}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
           {fehler && (
-            <div className="mb-4 text-red-400 text-sm bg-red-950 border border-red-800 rounded-xl px-4 py-3">
+            <div className="mb-4 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
               {fehler}
             </div>
           )}
 
-          {/* ── Tab: Grunddaten ── */}
           {aktuellerTab === "grunddaten" && (
             <div>
-              <Abschnitt titel="Kontaktdaten">
-                <Feld label="Unternehmensname" pflicht>
-                  <TextInput name="unternehmensname" wert={formDaten.unternehmensname} onChange={onChange} placeholder="Mustermann GmbH" />
+              <Abschnitt titel={kpf.kontaktdaten}>
+                <Feld label={kpf.unternehmensname}>
+                  <TextInput name="unternehmensname" wert={formDaten.unternehmensname} onChange={onChange} placeholder={kpf.unternehmensnameP} />
                 </Feld>
-                <Feld label="Branche">
-                  <TextInput name="branche" wert={formDaten.branche} onChange={onChange} placeholder="Handwerk, Gastronomie, ..." />
+                <Feld label={kpf.branche}>
+                  <TextInput name="branche" wert={formDaten.branche} onChange={onChange} placeholder={kpf.brancheP} />
                 </Feld>
-                <Feld label="Ansprechpartner">
-                  <TextInput name="ansprechpartner" wert={formDaten.ansprechpartner} onChange={onChange} placeholder="Max Mustermann" />
+                <Feld label={kpf.ansprechpartner}>
+                  <TextInput name="ansprechpartner" wert={formDaten.ansprechpartner} onChange={onChange} placeholder={kpf.ansprechpartnerP} />
                 </Feld>
-                <Feld label="E-Mail Ansprechpartner">
-                  <TextInput name="emailAnsprechpartner" wert={formDaten.emailAnsprechpartner} onChange={onChange} placeholder="max@unternehmen.de" />
+                <Feld label={kpf.emailAnsprechpartner}>
+                  <TextInput name="emailAnsprechpartner" wert={formDaten.emailAnsprechpartner} onChange={onChange} placeholder={kpf.emailAnsprechpartnerP} />
                 </Feld>
-                <Feld label="Telefonnummer">
-                  <TextInput name="telefonnummer" wert={formDaten.telefonnummer} onChange={onChange} placeholder="+49 ..." />
+                <Feld label={kpf.telefon}>
+                  <TextInput name="telefonnummer" wert={formDaten.telefonnummer} onChange={onChange} placeholder={kpf.telefonP} />
                 </Feld>
-                <Feld label="E-Mail (direkt)">
-                  <TextInput name="emailDirekt" wert={formDaten.emailDirekt} onChange={onChange} placeholder="info@unternehmen.de" />
+                <Feld label={kpf.emailDirekt}>
+                  <TextInput name="emailDirekt" wert={formDaten.emailDirekt} onChange={onChange} placeholder={kpf.emailDirektP} />
                 </Feld>
-                <Feld label="Webseite">
-                  <TextInput name="webseite" wert={formDaten.webseite} onChange={onChange} placeholder="https://..." />
+                <Feld label={kpf.webseite}>
+                  <TextInput name="webseite" wert={formDaten.webseite} onChange={onChange} placeholder={kpf.webseiteP} />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Geschäftsadresse">
-                    <TextArea name="geschaeftsadresse" wert={formDaten.geschaeftsadresse} onChange={onChange} placeholder="Musterstraße 1, 12345 Musterstadt" />
+                  <Feld label={kpf.adresse}>
+                    <TextArea name="geschaeftsadresse" wert={formDaten.geschaeftsadresse} onChange={onChange} placeholder={kpf.adresseP} />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Social-Media-Kanäle">
+                  <Feld label={kpf.socialMediaKanaele}>
                     <TextArea name="socialMediaKanaele" wert={formDaten.socialMediaKanaele} onChange={onChange}
                       placeholder="Instagram: @muster_gmbh&#10;TikTok: @mustergmbh&#10;Facebook: Mustermann GmbH" />
                   </Feld>
                 </VollBreit>
+                <Feld label={kpf.instagramLink}>
+                  <TextInput name="linkInstagram" wert={formDaten.linkInstagram} onChange={onChange} placeholder="https://instagram.com/..." />
+                </Feld>
+                <Feld label={kpf.facebookLink}>
+                  <TextInput name="linkFacebook" wert={formDaten.linkFacebook} onChange={onChange} placeholder="https://facebook.com/..." />
+                </Feld>
+                <Feld label={kpf.tiktokLink}>
+                  <TextInput name="linkTikTok" wert={formDaten.linkTikTok} onChange={onChange} placeholder="https://tiktok.com/@..." />
+                </Feld>
+                <Feld label={kpf.youtubeLink}>
+                  <TextInput name="linkYouTube" wert={formDaten.linkYouTube} onChange={onChange} placeholder="https://youtube.com/@..." />
+                </Feld>
               </Abschnitt>
 
-              <Abschnitt titel="Internes">
-                <Feld label="Status Kunde">
-                  <TextInput name="statusKunde" wert={formDaten.statusKunde} onChange={onChange} placeholder="z.B. Aktiv, pausiert, ..." />
-                </Feld>
-                <Feld label="Kunden-Kategorie">
-                  <SelectInput name="kundenKategorie" wert={formDaten.kundenKategorie} onChange={onChange}
-                    optionen={["A-Kunde", "B-Kunde", "C-Kunde", "Bestandskunde", "Neukunde", "Potenzial", "Inaktiv"]} />
-                </Feld>
-                <Feld label="Kundenzufriedenheit (intern)">
-                  <SelectInput name="kundenzufriedenheit" wert={formDaten.kundenzufriedenheit} onChange={onChange}
-                    optionen={["Sehr zufrieden", "Zufrieden", "Neutral", "Hoch", "Sehr Hoch", "Niedrig", "Kritisch"]} />
-                </Feld>
-                <Feld label="Archiv">
-                  <SelectInput name="archiv" wert={formDaten.archiv} onChange={onChange} optionen={["Ja", "Nein"]} />
+              <Abschnitt titel={kpf.internes}>
+                <Feld label={kpf.statusKunde}>
+                  <SelectInput name="statusKunde" wert={formDaten.statusKunde} onChange={onChange}
+                    optionen={[kpf.statusAktiv, kpf.statusBestand, kpf.statusNeu, kpf.statusInaktiv]} />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Notizen intern">
+                  <Feld label={kpf.notizenIntern}>
                     <TextArea name="notizenIntern" wert={formDaten.notizenIntern} onChange={onChange}
-                      placeholder="Interne Notizen, die der Kunde nicht sieht..." />
+                      placeholder={kpf.notizenInternP} />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Kundenfeedback">
+                  <Feld label={kpf.kundenfeedback}>
                     <TextArea name="kundenfeedback" wert={formDaten.kundenfeedback} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
@@ -379,49 +380,63 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
             </div>
           )}
 
-          {/* ── Tab: Freigabe & Vertrag ── */}
           {aktuellerTab === "freigabe" && (
             <div>
-              <Abschnitt titel="Freigabe">
-                <Feld label="Freigabe-Verantwortlicher">
+              <Abschnitt titel={kpf.freigabe}>
+                <Feld label={kpf.freigabeVerantwortlicher}>
                   <TextInput name="freigabeVerantwortlicher" wert={formDaten.freigabeVerantwortlicher} onChange={onChange} placeholder="Name der Person" />
                 </Feld>
-                <Feld label="E-Mail Freigabe-Verantwortlicher">
+                <Feld label={kpf.emailFreigabe}>
                   <TextInput name="emailFreigabeVerantwortlicher" wert={formDaten.emailFreigabeVerantwortlicher} onChange={onChange} placeholder="freigabe@unternehmen.de" />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Cloud-Link">
-                    <TextInput name="cloudLink" wert={formDaten.cloudLink} onChange={onChange} placeholder="https://drive.google.com/..." />
+                  <Feld label={kpf.cloudLink}>
+                    <TextInput name="cloudLink" wert={formDaten.cloudLink} onChange={onChange} placeholder={kpf.cloudLinkP} />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Zusatzlinks / Zugänge">
+                  <Feld label={kpf.zusatzlinks}>
                     <TextArea name="zusatzlinks" wert={formDaten.zusatzlinks} onChange={onChange}
                       placeholder="Canva-Link: ...&#10;Instagram-Passwort: ...&#10;..." />
                   </Feld>
                 </VollBreit>
               </Abschnitt>
 
-              <Abschnitt titel="Vertrag">
-                <Feld label="Vertragsstart">
+              <Abschnitt titel={kpf.vertrag}>
+                <Feld label={kpf.vertragsstart}>
                   <input type="date" value={formDaten.vertragsstart}
                     onChange={e => onChange("vertragsstart", e.target.value)} className={inputKlasse} />
                 </Feld>
-                <Feld label="Letzter Kontakt">
-                  <input type="date" value={formDaten.letzterKontakt}
-                    onChange={e => onChange("letzterKontakt", e.target.value)} className={inputKlasse} />
-                </Feld>
-                <Feld label="Vertraglich festgelegte Post-Anzahl">
+                <Feld label={kpf.postAnzahl}>
                   <input type="number" min="0" step="0.5"
                     value={formDaten.vertraglicheFestgelegtePostAnzahl}
                     onChange={e => onChange("vertraglicheFestgelegtePostAnzahl", e.target.value)}
-                    placeholder="z.B. 12" className={inputKlasse} />
+                    placeholder={kpf.postAnzahlP} className={inputKlasse} />
+                </Feld>
+                <Feld label={kpf.limitReels}>
+                  <input type="number" min="0" step="1" value={formDaten.limitReel}
+                    onChange={e => onChange("limitReel", e.target.value)}
+                    placeholder={kpf.limitP} className={inputKlasse} />
+                </Feld>
+                <Feld label={kpf.limitStories}>
+                  <input type="number" min="0" step="1" value={formDaten.limitStory}
+                    onChange={e => onChange("limitStory", e.target.value)}
+                    placeholder={kpf.limitP} className={inputKlasse} />
+                </Feld>
+                <Feld label={kpf.limitBilder}>
+                  <input type="number" min="0" step="1" value={formDaten.limitBild}
+                    onChange={e => onChange("limitBild", e.target.value)}
+                    placeholder={kpf.limitP} className={inputKlasse} />
+                </Feld>
+                <Feld label={kpf.limitKarussells}>
+                  <input type="number" min="0" step="1" value={formDaten.limitKarussell}
+                    onChange={e => onChange("limitKarussell", e.target.value)}
+                    placeholder={kpf.limitP} className={inputKlasse} />
                 </Feld>
               </Abschnitt>
             </div>
           )}
 
-          {/* ── Tab: Content & Planung ── */}
           {aktuellerTab === "content" && (
             <div>
               <Abschnitt titel="Content-Planung">
@@ -444,7 +459,7 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Gibt es Besonderheiten bei der Planung?">
+                  <Feld label={kpf.besonderheiten}>
                     <TextArea name="besonderheitenPlanung" wert={formDaten.besonderheitenPlanung} onChange={onChange}
                       placeholder="z.B. saisonale Schwankungen, Feiertage, ..." />
                   </Feld>
@@ -453,12 +468,12 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
 
               <Abschnitt titel="Herausforderungen & Fragen">
                 <VollBreit>
-                  <Feld label="Gibt es konkrete Herausforderungen, bei denen Sie Unterstützung wünschen?">
+                  <Feld label={kpf.herausforderungenFrage}>
                     <TextArea name="herausforderungen" wert={formDaten.herausforderungen} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Gibt es bestimmte Fragen, die Sie vorbereitet besprechen möchten?">
+                  <Feld label={kpf.vorbereitete}>
                     <TextArea name="vorbereiteteFragenBesprechen" wert={formDaten.vorbereiteteFragenBesprechen} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
@@ -466,64 +481,62 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
             </div>
           )}
 
-          {/* ── Tab: Drehtag ── */}
           {aktuellerTab === "drehtag" && (
             <div>
               <Abschnitt titel="Drehtag-Verfügbarkeit">
                 <VollBreit>
-                  <Feld label="An welchen Tagen wären Drehtage möglich?">
+                  <Feld label={kpf.drehtageWelcheTage}>
                     <MultiCheckbox name="drehtageAnWelchenTagen" wert={formDaten.drehtageAnWelchenTagen} onChange={onChange}
                       optionen={["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]} />
                   </Feld>
                 </VollBreit>
-                <Feld label="Zu welchen Uhrzeiten sind Dreharbeiten möglich?">
+                <Feld label={kpf.drehtageUhrzeiten}>
                   <TextArea name="drehtageUhrzeiten" wert={formDaten.drehtageUhrzeiten} onChange={onChange}
                     placeholder="z.B. Montag–Freitag 8–17 Uhr" />
                 </Feld>
-                <Feld label="Wunschdatum für ersten Drehtag">
+                <Feld label={kpf.wunschdatum}>
                   <input type="datetime-local" value={formDaten.wunschdatum}
                     onChange={e => onChange("wunschdatum", e.target.value)} className={inputKlasse} />
                 </Feld>
-                <Feld label="Wer ist Ansprechpartner während des Drehtags?">
+                <Feld label={kpf.ansprechpartnerDrehtag}>
                   <TextArea name="ansprechpartnerDrehtag" wert={formDaten.ansprechpartnerDrehtag} onChange={onChange}
                     placeholder="Name, Telefonnummer..." />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Gibt es Einschränkungen vor Ort (Lärm, Licht, Zugang etc.)?">
+                  <Feld label={kpf.einschraenkungenVorOrt}>
                     <TextArea name="einschraenkungenVorOrt" wert={formDaten.einschraenkungenVorOrt} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
-                <Feld label="Möchten Sie selbst in Reels, Stories oder auf Fotos auftreten?">
+                <Feld label={kpf.selbstAuftreten}>
                   <JaNeinUnsicher name="selbstAuftreten" wert={formDaten.selbstAuftreten} onChange={onChange} />
                 </Feld>
               </Abschnitt>
             </div>
           )}
 
-          {/* ── Tab: Rechtliches ── */}
           {aktuellerTab === "rechtliches" && (
             <div>
-              <Abschnitt titel="Mitarbeiter & Bildrechte">
-                <Feld label="Ist die Nutzung von Mitarbeitern im Bild rechtlich geklärt?">
+              <Abschnitt titel={kpf.mitarbeiterBildrechte}>
+                <Feld label={kpf.mitarbeiterGeklaert}>
                   <JaNeinUnsicher name="mitarbeiterImBildRechtlichGeklaert" wert={formDaten.mitarbeiterImBildRechtlichGeklaert} onChange={onChange} />
                 </Feld>
-                <Feld label="Ist die Nutzung von Mitarbeitern im Bild rechtlich geregelt?">
+                <Feld label={kpf.mitarbeiterGeregelt}>
                   <SelectInput name="mitarbeiterImBildRechtlichGeregelt" wert={formDaten.mitarbeiterImBildRechtlichGeregelt} onChange={onChange}
-                    optionen={["Ja, schriftlich geregelt", "Ich bin mir unsicher", "Nein"]} />
+                    optionen={[kpf.schriftlichGeregelt, kpf.unsicher, "Nein"]} />
                 </Feld>
-                <Feld label="Gibt es Mitarbeitende, die nicht gezeigt werden dürfen?">
+                <Feld label={kpf.mitarbeiterNichtZeigen}>
                   <JaNeinUnsicher name="mitarbeiterNichtZeigen" wert={formDaten.mitarbeiterNichtZeigen} onChange={onChange} />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Welche Mitarbeiter dürfen nicht gezeigt werden?">
+                  <Feld label={kpf.welcheMitarbeiter}>
                     <TextArea name="welcheMitarbeiterNichtZeigen" wert={formDaten.welcheMitarbeiterNichtZeigen} onChange={onChange} placeholder="Namen..." />
                   </Feld>
                 </VollBreit>
-                <Feld label="Gibt es sensible Betriebsbereiche, die nicht gezeigt werden sollen?">
+                <Feld label={kpf.sensibleBereiche}>
                   <JaNeinUnsicher name="sensibleBereiche" wert={formDaten.sensibleBereiche} onChange={onChange} />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Welche Bereiche dürfen nicht gezeigt werden?">
+                  <Feld label={kpf.welcheBereiche}>
                     <TextArea name="welcheBereicheNichtZeigen" wert={formDaten.welcheBereicheNichtZeigen} onChange={onChange} placeholder="Bereiche..." />
                   </Feld>
                 </VollBreit>
@@ -531,59 +544,58 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
             </div>
           )}
 
-          {/* ── Tab: Marke & Ziele ── */}
           {aktuellerTab === "marke" && (
             <div>
-              <Abschnitt titel="Unternehmen & Marke">
+              <Abschnitt titel={kpf.unternehmenMarke}>
                 <VollBreit>
-                  <Feld label="Kurzbeschreibung des Betriebs">
+                  <Feld label={kpf.kurzbeschreibung}>
                     <TextArea name="kurzbeschreibung" wert={formDaten.kurzbeschreibung} onChange={onChange}
-                      placeholder="Was macht das Unternehmen?" />
+                      placeholder={kpf.kurzbeschreibungP} />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Kernwerte">
+                  <Feld label={kpf.kernwerte}>
                     <TextArea name="kernwerte" wert={formDaten.kernwerte} onChange={onChange}
                       placeholder="z.B. Qualität, Verlässlichkeit, Nachhaltigkeit..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Alleinstellungsmerkmale (USP)">
+                  <Feld label={kpf.alleinstellungsmerkmale}>
                     <TextArea name="alleinstellungsmerkmale" wert={formDaten.alleinstellungsmerkmale} onChange={onChange}
-                      placeholder="Was macht das Unternehmen besonders?" />
+                      placeholder={kpf.alleinstellungsmerkmaleP} />
                   </Feld>
                 </VollBreit>
               </Abschnitt>
 
-              <Abschnitt titel="Zielgruppe">
-                <Feld label="Was ist das Hauptziel der Zusammenarbeit?">
+              <Abschnitt titel={kpf.zielgruppe}>
+                <Feld label={kpf.hauptziel}>
                   <SelectInput name="hauptziel" wert={formDaten.hauptziel} onChange={onChange}
-                    optionen={["Neue Mitarbeiter gewinnen", "Neue Kunden gewinnen", "Sichtbarkeit steigern", "Sonstiges"]} />
+                    optionen={[kpf.neueMitarbeiter, kpf.neueKunden, kpf.sichtbarkeit, kpf.sonstiges]} />
                 </Feld>
                 <VollBreit>
-                  <Feld label="Welche Zielgruppe möchten Sie vorrangig erreichen?">
+                  <Feld label={kpf.zielgruppeErreichen}>
                     <TextArea name="zielgruppe" wert={formDaten.zielgruppe} onChange={onChange}
                       placeholder="Alter, Interessen, Region, ..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Wo hält sich die Zielgruppe online auf?">
+                  <Feld label={kpf.zielgruppeOnline}>
                     <TextArea name="zielgruppeOnline" wert={formDaten.zielgruppeOnline} onChange={onChange}
                       placeholder="Instagram, Facebook-Gruppen, ..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Häufigste Probleme / Wünsche dieser Kunden">
+                  <Feld label={kpf.haeufigsteProbleme}>
                     <TextArea name="haeufigsteProbleme" wert={formDaten.haeufigsteProbleme} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Häufigste Einwände">
+                  <Feld label={kpf.haeufigsteEinwaende}>
                     <TextArea name="haeufigsteEinwaende" wert={formDaten.haeufigsteEinwaende} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Was Kunden lieben">
+                  <Feld label={kpf.wasKundenLieben}>
                     <TextArea name="wasKundenLieben" wert={formDaten.wasKundenLieben} onChange={onChange} placeholder="..." />
                   </Feld>
                 </VollBreit>
@@ -591,48 +603,46 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
             </div>
           )}
 
-          {/* ── Tab: Produkte & Events ── */}
           {aktuellerTab === "produkte" && (
             <div>
               <Abschnitt titel="Produkte & Leistungen">
                 <VollBreit>
-                  <Feld label="Hero-Produkte (Hauptleistungen)">
+                  <Feld label={kpf.heroProdukte}>
                     <TextArea name="heroProdukte" wert={formDaten.heroProdukte} onChange={onChange}
                       placeholder="Die wichtigsten Produkte oder Dienstleistungen..." />
                   </Feld>
                 </VollBreit>
                 <VollBreit>
-                  <Feld label="Wiederkehrende Produkte / Content-Serien">
+                  <Feld label={kpf.wiederkehrendeProdukte}>
                     <TextArea name="wiederkehrendeProdukte" wert={formDaten.wiederkehrendeProdukte} onChange={onChange}
-                      placeholder="z.B. wöchentlicher Tipp, monatliche Aktion, ..." />
+                      placeholder={kpf.wiederkehrendeP} />
                   </Feld>
                 </VollBreit>
               </Abschnitt>
 
               <Abschnitt titel="Events & Termine">
                 <VollBreit>
-                  <Feld label="Events der nächsten Monate">
+                  <Feld label={kpf.eventsNaechsteMonate}>
                     <TextArea name="eventsNaechsteMonate" wert={formDaten.eventsNaechsteMonate} onChange={onChange}
-                      placeholder="z.B. Tag der offenen Tür am 15.06., Sommerfest..." />
+                      placeholder={kpf.eventsP} />
                   </Feld>
                 </VollBreit>
               </Abschnitt>
             </div>
           )}
 
-          {/* Navigations-Buttons */}
-          <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-800">
+          <div className="flex items-center justify-between mt-6 pt-6 border-t border-divider">
             <button type="button"
               onClick={() => {
                 const idx = TABS.findIndex(t => t.id === aktuellerTab);
                 if (idx > 0) setAktuellerTab(TABS[idx - 1].id);
               }}
               disabled={aktuellerTab === TABS[0].id}
-              className="text-gray-400 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              className="text-muted hover:text-fg text-sm px-3 py-2 rounded-lg hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
               ← Zurück
             </button>
-            <span className="text-gray-500 text-xs">
-              Tab {TABS.findIndex(t => t.id === aktuellerTab) + 1} / {TABS.length}
+            <span className="text-subtle text-xs">
+              Tab {TABS.findIndex(t => t.id === aktuellerTab) + 1} {kpf.tabVon} {TABS.length}
             </span>
             <button type="button"
               onClick={() => {
@@ -640,8 +650,8 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
                 if (idx < TABS.length - 1) setAktuellerTab(TABS[idx + 1].id);
               }}
               disabled={aktuellerTab === TABS[TABS.length - 1].id}
-              className="text-gray-400 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-              Weiter →
+              className="text-muted hover:text-fg text-sm px-3 py-2 rounded-lg hover:bg-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              {kpf.weiter}
             </button>
           </div>
         </div>

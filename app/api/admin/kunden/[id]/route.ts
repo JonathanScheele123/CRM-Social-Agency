@@ -1,47 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { bereinigeDaten } from "@/lib/kunden-felder";
 import { NextRequest } from "next/server";
-
-function bereinigeDaten(daten: Record<string, unknown>) {
-  const stringFelder = [
-    "unternehmensname", "ansprechpartner", "geschaeftsadresse", "emailAnsprechpartner",
-    "branche", "telefonnummer", "webseite", "emailDirekt", "socialMediaKanaele",
-    "freigabeVerantwortlicher", "emailFreigabeVerantwortlicher", "cloudLink", "zusatzlinks",
-    "statusKunde", "kundenKategorie", "kundenzufriedenheit", "archiv", "kundenfeedback",
-    "notizenIntern", "contentIdeen", "postingKalender", "mitarbeiterImBildRechtlichGeklaert",
-    "mitarbeiterImBildRechtlichGeregelt", "mitarbeiterNichtZeigen", "welcheMitarbeiterNichtZeigen",
-    "sensibleBereiche", "welcheBereicheNichtZeigen", "drehtageUhrzeiten", "ansprechpartnerDrehtag",
-    "einschraenkungenVorOrt", "selbstAuftreten", "kurzbeschreibung", "kernwerte",
-    "alleinstellungsmerkmale", "haeufigsteProbleme", "haeufigsteEinwaende", "zielgruppeOnline",
-    "wasKundenLieben", "zielgruppe", "hauptziel", "heroProdukte", "wiederkehrendeProdukte",
-    "eventsNaechsteMonate", "besonderheitenPlanung", "herausforderungen", "vorbereiteteFragenBesprechen",
-  ];
-
-  const arrayFelder = ["contentPlan", "drehtageAnWelchenTagen"];
-  const zahlFelder = ["vertraglicheFestgelegtePostAnzahl"];
-  const datumFelder = ["vertragsstart", "letzterKontakt", "wunschdatum"];
-
-  const ergebnis: Record<string, unknown> = {};
-
-  for (const feld of stringFelder) {
-    if (feld in daten) ergebnis[feld] = daten[feld] === "" ? null : daten[feld];
-  }
-  for (const feld of arrayFelder) {
-    if (feld in daten) ergebnis[feld] = Array.isArray(daten[feld]) ? daten[feld] : [];
-  }
-  for (const feld of zahlFelder) {
-    if (feld in daten) {
-      ergebnis[feld] = daten[feld] === "" || daten[feld] == null ? null : Number(daten[feld]);
-    }
-  }
-  for (const feld of datumFelder) {
-    if (feld in daten) {
-      ergebnis[feld] = daten[feld] === "" || daten[feld] == null ? null : new Date(daten[feld] as string);
-    }
-  }
-
-  return ergebnis;
-}
 
 export async function PATCH(
   req: NextRequest,
@@ -55,12 +15,17 @@ export async function PATCH(
   const { id } = await params;
   const daten = await req.json();
 
-  const kunde = await prisma.kundenprofil.update({
-    where: { id },
-    data: bereinigeDaten(daten),
-  });
-
-  return Response.json({ id: kunde.id });
+  try {
+    const kunde = await prisma.kundenprofil.update({
+      where: { id },
+      data: bereinigeDaten(daten),
+    });
+    return Response.json({ id: kunde.id });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[PATCH /api/admin/kunden]", msg);
+    return Response.json({ fehler: msg }, { status: 500 });
+  }
 }
 
 export async function DELETE(
@@ -74,7 +39,15 @@ export async function DELETE(
 
   const { id } = await params;
 
-  await prisma.kundenprofil.delete({ where: { id } });
-
-  return Response.json({ ok: true });
+  try {
+    await prisma.kundenprofil.delete({ where: { id } });
+    return Response.json({ ok: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("Record to delete does not exist")) {
+      return Response.json({ fehler: "Kunde nicht gefunden." }, { status: 404 });
+    }
+    console.error("[DELETE /api/admin/kunden]", msg);
+    return Response.json({ fehler: "Fehler beim Löschen." }, { status: 500 });
+  }
 }

@@ -1,26 +1,305 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --surface:      #ffffff;
+  --card:         rgba(255, 255, 255, 0.52);
+  --elevated:     rgba(255, 255, 255, 0.60);
+  --divider:      rgba(10, 15, 26, 0.08);
+  --fg:           #0a0f1a;
+  --muted:        #4b5468;
+  --subtle:       #8a92a3;
+  --accent:       #292a91;
+  --accent-hover: #1f207a;
+}
+
+.dark {
+  --surface:      #0a0f1a;
+  --card:         rgba(21, 28, 48, 0.55);
+  --elevated:     rgba(30, 37, 53, 0.65);
+  --divider:      rgba(255, 255, 255, 0.08);
+  --fg:           #f0f2f7;
+  --muted:        #8a92a3;
+  --subtle:       #4b5468;
+  --accent:       #4546c8;
+  --accent-hover: #292a91;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface:      var(--surface);
+  --color-card:         var(--card);
+  --color-elevated:     var(--elevated);
+  --color-divider:      var(--divider);
+  --color-fg:           var(--fg);
+  --color-muted:        var(--muted);
+  --color-subtle:       var(--subtle);
+  --color-accent:       var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html { background: var(--surface); }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+/* ─── Glass cards ─────────────────────────────────────────── */
+.bg-card {
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.80),
+    0 1px 3px rgba(10, 15, 26, 0.05),
+    0 6px 28px rgba(10, 15, 26, 0.07);
+}
+.dark .bg-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.20),
+    0 6px 28px rgba(0, 0, 0, 0.25);
+}
+
+/* ─── Glass elevated (buttons, inputs, chips) ─────────────── */
+.bg-elevated {
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+/* ─── Glass header / tab bar ──────────────────────────────── */
+.glass-bar {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border-color: rgba(255, 255, 255, 0.50) !important;
+  box-shadow: 0 1px 0 rgba(10, 15, 26, 0.05);
+}
+.dark .glass-bar {
+  background: rgba(10, 15, 26, 0.72);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ─── Glass modal overlay ─────────────────────────────────── */
+.glass-overlay {
+  background: rgba(10, 15, 26, 0.30);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+
+/* ─── Modal pop animation ────────────────────────────────── */
+@keyframes modal-pop {
+  0%   { opacity: 0; transform: scale(0.82); filter: blur(8px); }
+  65%  { opacity: 1; transform: scale(1.03); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-modal-pop {
+  animation: modal-pop 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ─── Login success animation ────────────────────────────── */
+@keyframes login-form-exit {
+  0%   { opacity: 1;   transform: translateY(0)    scale(1);    filter: blur(0px); }
+  100% { opacity: 0;   transform: translateY(16px) scale(0.97); filter: blur(6px); }
+}
+
+@keyframes login-logo-burst {
+  0%   { transform: scale(1);   opacity: 1; }
+  40%  { transform: scale(2.2); opacity: 0.9; }
+  100% { transform: scale(5.5); opacity: 0; }
+}
+
+@keyframes login-overlay-pulse {
+  0%   { opacity: 0;    transform: scale(0.7); }
+  45%  { opacity: 0.14; transform: scale(1);   }
+  100% { opacity: 0;    transform: scale(1.3); }
+}
+
+@keyframes login-screen-flash {
+  0%   { opacity: 0; }
+  65%  { opacity: 0; }
+  80%  { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+
+.login-form-exit {
+  animation: login-form-exit 0.28s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.login-logo-burst {
+  animation: login-logo-burst 0.82s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center center;
+}
+
+.login-overlay-pulse {
+  animation: login-overlay-pulse 0.82s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.login-screen-flash {
+  animation: login-screen-flash 0.85s ease both;
+}
+
+/* ─── Page enter animation ────────────────────────────────── */
+@keyframes page-enter-content {
+  from { transform: scale(0.97); opacity: 0.45; filter: blur(12px); }
+  to   { transform: scale(1);    opacity: 1;    filter: none; }
+}
+
+.page-enter-content {
+  animation: page-enter-content 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center 30%;
+}
+
+/* ─── Ambient background orbs ────────────────────────────── */
+.ambient-orb-1 { background: radial-gradient(ellipse, rgba(60,107,255,0.07), transparent 68%); }
+.ambient-orb-2 { background: radial-gradient(ellipse, rgba(233,78,149,0.06), transparent 68%); }
+.ambient-orb-3 { background: radial-gradient(ellipse, rgba(130,90,255,0.06), transparent 68%); }
+.ambient-orb-4 { background: radial-gradient(ellipse, rgba(50,160,255,0.05), transparent 68%); }
+
+.dark .ambient-orb-1 { background: radial-gradient(ellipse, rgba(60,107,255,0.22), transparent 68%); }
+.dark .ambient-orb-2 { background: radial-gradient(ellipse, rgba(233,78,149,0.18), transparent 68%); }
+.dark .ambient-orb-3 { background: radial-gradient(ellipse, rgba(130,90,255,0.18), transparent 68%); }
+.dark .ambient-orb-4 { background: radial-gradient(ellipse, rgba(50,160,255,0.16), transparent 68%); }
+
+@keyframes orb-drift-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(3vw, 2vh) scale(1.06); }
+  66%  { transform: translate(-2vw, 4vh) scale(0.96); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes orb-drift-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(-4vw, 3vh) scale(0.94); }
+  66%  { transform: translate(2vw, -2vh) scale(1.07); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes orb-drift-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(2vw, -3vh) scale(1.05); }
+  75%  { transform: translate(-3vw, 2vh) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes orb-drift-4 {
+  0%   { transform: translate(0, 0) scale(1); }
+  40%  { transform: translate(-2vw, -2vh) scale(1.08); }
+  80%  { transform: translate(3vw, 3vh) scale(0.93); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.bg-animated .ambient-orb-1 { animation: orb-drift-1 22s ease-in-out infinite; }
+.bg-animated .ambient-orb-2 { animation: orb-drift-2 28s ease-in-out infinite; }
+.bg-animated .ambient-orb-3 { animation: orb-drift-3 25s ease-in-out infinite; }
+.bg-animated .ambient-orb-4 { animation: orb-drift-4 30s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-animated .ambient-orb-1,
+  .bg-animated .ambient-orb-2,
+  .bg-animated .ambient-orb-3,
+  .bg-animated .ambient-orb-4 { animation: none; }
+}
+
+/* ─── Video zoom-in animation ────────────────────────────── */
+@keyframes video-zoom-in {
+  from { transform: scale(0.93); opacity: 0; filter: blur(6px); }
+  to   { transform: scale(1);    opacity: 1; filter: none; }
+}
+
+.video-zoom-in {
+  animation: video-zoom-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.1s;
+}
+
+/* ─── Button group hover ──────────────────────────────────── */
+.btn-group {
+  display: flex;
+  align-items: center;
+}
+
+.btn-group > * {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease;
+  will-change: transform;
+}
+
+.btn-group:has(> *:hover) > *:not(:hover) {
+  transform: scale(0.94);
+  opacity: 0.65;
+}
+
+.btn-group > *:hover {
+  transform: scale(1.06);
+  opacity: 1;
+}
+
+/* ─── Card group hover (stacked lists, grids) ─────────────── */
+.card-group > * {
+  transition: transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1), opacity 0.2s ease;
+  will-change: transform;
+}
+
+.card-group:has(> *:hover) > *:not(:hover) {
+  transform: scale(0.989);
+  opacity: 0.84;
+}
+
+.card-group > *:hover {
+  transform: scale(1.006);
+  opacity: 1;
+}
+
+/* ─── Status glow dots ────────────────────────────────────── */
+.glow-blue   { box-shadow: 0 0 6px 1px rgba(59, 130, 246, 0.6),  0 0 14px 2px rgba(59, 130, 246, 0.25); }
+.glow-green  { box-shadow: 0 0 6px 1px rgba(34, 197, 94, 0.65),  0 0 14px 2px rgba(34, 197, 94, 0.28); }
+.glow-red    { box-shadow: 0 0 6px 1px rgba(239, 68, 68, 0.65),  0 0 14px 2px rgba(239, 68, 68, 0.28); }
+.glow-yellow { box-shadow: 0 0 6px 1px rgba(234, 179, 8, 0.70),  0 0 14px 2px rgba(234, 179, 8, 0.30); }
+
+/* ─── Left-stripe glow on calendar rows ──────────────────── */
+.stripe-glow-blue,
+.stripe-glow-green,
+.stripe-glow-red,
+.stripe-glow-yellow { position: relative; }
+
+.stripe-glow-blue::before,
+.stripe-glow-green::before,
+.stripe-glow-red::before,
+.stripe-glow-yellow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  pointer-events: none;
+  border-radius: 4px 0 0 4px;
+  z-index: 1;
+}
+.stripe-glow-blue::before   { box-shadow: 0 0 10px 5px rgba(59, 130, 246, 0.55), 0 0 22px 8px rgba(59, 130, 246, 0.25); }
+.stripe-glow-green::before  { box-shadow: 0 0 10px 5px rgba(34, 197, 94, 0.60),  0 0 22px 8px rgba(34, 197, 94, 0.28); }
+.stripe-glow-red::before    { box-shadow: 0 0 10px 5px rgba(239, 68, 68, 0.60),  0 0 22px 8px rgba(239, 68, 68, 0.28); }
+.stripe-glow-yellow::before { box-shadow: 0 0 10px 5px rgba(234, 179, 8, 0.65),  0 0 22px 8px rgba(234, 179, 8, 0.30); }
+
+
+/* ─── Glass modal panel ───────────────────────────────────── */
+.glass-modal {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(48px) saturate(220%) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(220%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 8px 56px rgba(10, 15, 26, 0.18),
+    0 2px 8px rgba(10, 15, 26, 0.08) !important;
+}
+.dark .glass-modal {
+  background: rgba(21, 28, 48, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 56px rgba(0, 0, 0, 0.50),
+    0 2px 8px rgba(0, 0, 0, 0.30) !important;
 }

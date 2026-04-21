@@ -22,14 +22,13 @@ async function main() {
 
   console.log("Admin erstellt:", admin.email);
 
-  // Demo-Kunde anlegen
   const demoKunde = await prisma.kundenprofil.upsert({
     where: { kundenNr: 1 },
     update: {},
     create: {
       unternehmensname: "Demo GmbH",
       ansprechpartner: "Max Mustermann",
-      emailAnsprechpartner: "max@demo.de",
+      emailAnsprechpartner: null,
       branche: "Handwerk",
       kundenKategorie: "A-Kunde",
       statusKunde: "Aktiv – läuft gut",
@@ -41,7 +40,7 @@ async function main() {
 
   console.log("Demo-Kunde erstellt:", demoKunde.unternehmensname);
 
-  // Demo-Kalendereinträge
+  // Demo-Kalendereinträge (Board existiert ohne Benutzer-Login)
   await prisma.kalenderEintrag.createMany({
     skipDuplicates: true,
     data: [
@@ -92,7 +91,7 @@ async function main() {
         gepostet: false,
         prioritaet: "Niedrig",
         captionText: "Slide 1: Wie lange dauert eine typische Reparatur?\nSlide 2: Das kommt auf den Schaden an...\nSlide 3: Für einfache Reparaturen: 1-2 Tage\nSlide 4: Schreibt uns direkt!",
-        freigabeStatus: "Überarbeitung",
+        freigabeStatus: "Abgelehnt",
         freigabeKommentar: "Bitte die Slide-Texte etwas lockerer formulieren – klingt noch zu formal.",
         freigegebenAm: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       },
@@ -136,37 +135,9 @@ async function main() {
     ],
   });
 
-  // Demo-Kundenlogin erstellen und zuordnen
-  const kundenPasswort = await bcrypt.hash("kunde123", 12);
-  const kundenUser = await prisma.user.upsert({
-    where: { email: "kunde@demo.de" },
-    update: {},
-    create: {
-      email: "kunde@demo.de",
-      name: "Max Mustermann",
-      passwort: kundenPasswort,
-      rolle: "KUNDE",
-    },
-  });
-
-  await prisma.kundenprofilZugriff.upsert({
-    where: {
-      userId_kundenprofilId: {
-        userId: kundenUser.id,
-        kundenprofilId: demoKunde.id,
-      },
-    },
-    update: {},
-    create: {
-      userId: kundenUser.id,
-      kundenprofilId: demoKunde.id,
-    },
-  });
-
-  console.log("Kunden-Login erstellt:", kundenUser.email);
   console.log("\n✓ Seed abgeschlossen");
   console.log("  Admin:  admin@agentur.de / admin123");
-  console.log("  Kunde:  kunde@demo.de / kunde123");
+  console.log("  Demo-Kunde: Demo GmbH (kein Benutzer-Login)");
 }
 
 main()

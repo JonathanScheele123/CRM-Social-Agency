@@ -28,7 +28,7 @@ type Props =
     };
 
 const inputKlasse =
-  "w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-2.5 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors";
+  "w-full bg-elevated border border-divider text-fg rounded-xl px-4 py-2.5 text-sm placeholder:text-subtle focus:outline-none focus:border-accent transition-colors";
 
 export default function BenutzerModal(props: Props) {
   const router = useRouter();
@@ -48,6 +48,7 @@ export default function BenutzerModal(props: Props) {
     passwort: "",
     aktiv: props.modus === "bearbeiten" ? props.benutzer.aktiv : true,
     kundenprofilIds: initialKundenprofilIds,
+    kundenRolle: "Inhaber" as "Inhaber" | "Mitarbeiter",
   });
 
   function toggleKundenprofil(id: string) {
@@ -68,6 +69,7 @@ export default function BenutzerModal(props: Props) {
       name: form.name,
       email: form.email,
       kundenprofilIds: form.kundenprofilIds,
+      kundenRolle: form.kundenRolle,
     };
 
     if (props.modus === "erstellen") {
@@ -113,23 +115,23 @@ export default function BenutzerModal(props: Props) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4"
       onClick={props.onClose}
     >
       <div
-        className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="glass-modal rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto "
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-          <h3 className="font-semibold">
+        <div className="p-5 border-b border-divider flex items-center justify-between">
+          <h3 className="font-semibold text-fg">
             {props.modus === "erstellen" ? "Neuer Benutzer" : "Benutzer bearbeiten"}
           </h3>
-          <button onClick={props.onClose} className="text-gray-400 hover:text-white">✕</button>
+          <button onClick={props.onClose} className="text-muted hover:text-fg transition-colors">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-1.5">Name</label>
+            <label className="block text-sm text-muted mb-1.5">Name</label>
             <input
               type="text"
               value={form.name}
@@ -140,7 +142,7 @@ export default function BenutzerModal(props: Props) {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1.5">E-Mail *</label>
+            <label className="block text-sm text-muted mb-1.5">E-Mail *</label>
             <input
               type="email"
               required
@@ -152,7 +154,7 @@ export default function BenutzerModal(props: Props) {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1.5">
+            <label className="block text-sm text-muted mb-1.5">
               {props.modus === "erstellen" ? "Passwort *" : "Neues Passwort"}
             </label>
             <input
@@ -169,9 +171,9 @@ export default function BenutzerModal(props: Props) {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Interface-Zugriff</label>
+            <label className="block text-sm text-muted mb-2">Interface-Zugriff</label>
             {props.alleKunden.length === 0 ? (
-              <p className="text-gray-500 text-sm">Noch keine Kundenprofile vorhanden.</p>
+              <p className="text-subtle text-sm">Noch keine Kundenprofile vorhanden.</p>
             ) : (
               <div className="space-y-1.5">
                 {props.alleKunden.map((k) => (
@@ -179,15 +181,15 @@ export default function BenutzerModal(props: Props) {
                     key={k.id}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
                       form.kundenprofilIds.includes(k.id)
-                        ? "bg-blue-950/40 border-blue-600/50 text-white"
-                        : "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500"
+                        ? "bg-accent/10 border-accent/50 text-fg"
+                        : "bg-elevated border-divider text-muted hover:border-muted/60"
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={form.kundenprofilIds.includes(k.id)}
                       onChange={() => toggleKundenprofil(k.id)}
-                      className="accent-blue-600"
+                      className="accent-[var(--accent)]"
                     />
                     <span className="text-sm">
                       #{k.kundenNr} {k.unternehmensname ?? "Unbenannt"}
@@ -198,6 +200,19 @@ export default function BenutzerModal(props: Props) {
             )}
           </div>
 
+          <div>
+            <label className="block text-sm text-muted mb-1.5">Rolle</label>
+            <select
+              value={form.kundenRolle}
+              onChange={(e) => setForm((p) => ({ ...p, kundenRolle: e.target.value as "Inhaber" | "Mitarbeiter" }))}
+              className={inputKlasse}
+            >
+              <option value="Inhaber">Inhaber – voller Zugriff</option>
+              <option value="Mitarbeiter">Mitarbeiter – kein Zugriff auf Kundendaten</option>
+              <option value="Co-Admin">Co-Admin – mehrere Interfaces, voller Zugriff</option>
+            </select>
+          </div>
+
           {props.modus === "bearbeiten" && (
             <label className="flex items-center gap-2.5 cursor-pointer">
               <input
@@ -206,12 +221,12 @@ export default function BenutzerModal(props: Props) {
                 onChange={(e) => setForm((p) => ({ ...p, aktiv: e.target.checked }))}
                 className="w-4 h-4 accent-blue-600"
               />
-              <span className="text-sm text-gray-300">Benutzer aktiv</span>
+              <span className="text-sm text-muted">Benutzer aktiv</span>
             </label>
           )}
 
           {fehler && (
-            <p className="text-red-400 text-sm bg-red-950 border border-red-800 rounded-xl px-3 py-2">
+            <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2">
               {fehler}
             </p>
           )}
@@ -221,7 +236,7 @@ export default function BenutzerModal(props: Props) {
               <button
                 type="button"
                 onClick={handleLoeschen}
-                className="px-4 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-950/30 transition-colors"
+                className="px-4 py-2.5 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
               >
                 Löschen
               </button>
@@ -230,14 +245,14 @@ export default function BenutzerModal(props: Props) {
               <button
                 type="button"
                 onClick={props.onClose}
-                className="px-4 py-2.5 rounded-xl text-sm bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+                className="px-4 py-2.5 rounded-xl text-sm bg-elevated text-fg hover:opacity-80 transition-opacity border border-divider"
               >
                 Abbrechen
               </button>
               <button
                 type="submit"
                 disabled={laden}
-                className="px-5 py-2.5 rounded-xl text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium transition-colors"
+                className="px-5 py-2.5 rounded-xl text-sm bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-medium transition-colors"
               >
                 {laden ? "..." : props.modus === "erstellen" ? "Erstellen" : "Speichern"}
               </button>

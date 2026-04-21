@@ -29,13 +29,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!passwortKorrekt) return null;
 
+        // Standard-Passwort → immer Passwortänderung erzwingen
+        const isDefaultPassword = credentials.password === "1234567";
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           rolle: user.rolle,
+          mustChangePassword: user.mustChangePassword || isDefaultPassword,
         };
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, account, trigger }) {
+      if (user && account?.provider === "credentials") {
+        token.rolle = (user as { rolle: string }).rolle;
+        token.id = user.id ?? "";
+        token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
+      }
+      // Session-Update: mustChangePassword aus DB neu lesen (nach Passwortänderung)
+      if (trigger === "update" && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { mustChangePassword: true },
+        });
+        if (dbUser) token.mustChangePassword = dbUser.mustChangePassword;
+      }
+      return token;
+    },
+  },
 });
