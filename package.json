@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:cf": "prisma generate && next build && npx opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js",
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
