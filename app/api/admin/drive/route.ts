@@ -108,7 +108,6 @@ export async function PATCH(req: NextRequest) {
       addParents: targetFolderId,
       removeParents: sourceFolderId,
       supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
       requestBody: {},
       fields: "id,parents",
     });
