@@ -9,3 +9,14 @@ binding = "ASSETS"
 
 [images]
 binding = "IMAGES"
+
+[vars]
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "587"
+SMTP_SECURE = "false"
+SMTP_USER = "kontakt@jonathanscheele.de"
+SMTP_FROM = "kontakt@jonathanscheele.de"
+GMAIL_FROM = "kontakt@jonathanscheele.de"
+GMAIL_CLIENT_ID = "35088444156-k2jr6refmmdd4t3e777o8fg1ncll4s8a.apps.googleusercontent.com"
+GOOGLE_SA_CLIENT_EMAIL = "admin-877@social-media-crm-493907.iam.gserviceaccount.com"
+GOOGLE_DRIVE_ROOT_FOLDER_ID = "1gnDQbU8NgD_YRxn8ZGfliyBig163Q6L2"
