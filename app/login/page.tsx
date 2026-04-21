@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import LangToggle from "@/components/LangToggle";
 import { useT } from "@/lib/i18n";
+import WaveBackground from "@/components/WaveBackground";
 
 export default function LoginPage() {
   const t = useT();
@@ -40,6 +41,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 overflow-hidden">
 
+      <WaveBackground />
+
       {success && (
         <div
           className="login-screen-flash pointer-events-none fixed inset-0 z-50"
@@ -62,12 +65,12 @@ export default function LoginPage() {
         />
       )}
 
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
         <LangToggle />
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm relative z-10 login-enter">
         <div className="flex justify-center mb-6">
           <img
             src="/logo.png"
