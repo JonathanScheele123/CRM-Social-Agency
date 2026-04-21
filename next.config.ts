@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  outputFileTracingIncludes: {
+    "**": ["./node_modules/pg-cloudflare/**/*"],
+  },
 };
 
 export default nextConfig;
