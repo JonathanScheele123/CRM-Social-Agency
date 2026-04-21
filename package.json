@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "deploy": "opennextjs-cloudflare deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
