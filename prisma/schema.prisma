@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  output          = "../app/generated/prisma"
+  output          = "../node_modules/prisma-wasm-edge"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -124,7 +124,9 @@ model Kundenprofil {
   freigabeVerantwortlicher2      String?
   emailFreigabeVerantwortlicher2 String?
   cloudLink                     String?
+  kundeDriveLink                String?
   zusatzlinks                   String?
+  contentStrategieMailGesendet  DateTime?
 
   // Vertrag & Status
   vertragsstart                     DateTime?
@@ -221,6 +223,29 @@ model Kundenprofil {
   archivEintraege ArchivEintrag[]
   kpis            KPI[]
   kundendaten     Kundendaten[]
+  socialAccounts  SocialAccount[]
+}
+
+// ─── Social Accounts ─────────────────────────────────────────────────────────
+
+model SocialAccount {
+  id             String    @id @default(cuid())
+  kundenprofilId String
+  plattform      String
+  accountId      String
+  accountName    String?
+  accountHandle  String?
+  accessToken    String    @db.Text
+  pageId         String?
+  pageToken      String?   @db.Text
+  tokenExpiry    DateTime?
+  syncedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  kundenprofil Kundenprofil @relation(fields: [kundenprofilId], references: [id], onDelete: Cascade)
+
+  @@unique([kundenprofilId, plattform, accountId])
 }
 
 // ─── Audit-Log ──────────────────────────────────────────────────────────────

@@ -36,7 +36,7 @@ function VorlagenModal({
   function set(k: keyof FormState, v: string) { setForm(p => ({ ...p, [k]: v })); }
 
   async function submit() {
-    if (!form.name || !form.betreff) { setFehler("Name und Betreff sind Pflichtfelder."); return; }
+    if (!form.name) { setFehler("Name ist ein Pflichtfeld."); return; }
     setSpeichern(true);
     setFehler(null);
     try {
@@ -93,7 +93,7 @@ function VorlagenModal({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-medium text-muted">Betreff *</label>
+            <label className="text-xs font-medium text-muted">Betreff</label>
             <input
               value={form.betreff}
               onChange={e => set("betreff", e.target.value)}

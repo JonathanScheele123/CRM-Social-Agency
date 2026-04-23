@@ -16,6 +16,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import PullToRefresh from "@/components/PullToRefresh";
 import DriveTab from "@/components/admin/DriveTab";
 import PostfachTab from "@/components/admin/PostfachTab";
+import SocialAccountsTab from "@/components/admin/SocialAccountsTab";
 import { useT, useLang } from "@/lib/i18n";
 
 type AllesKundenprofil = { id: string; unternehmensname: string | null; kundenNr: number };
@@ -34,6 +35,10 @@ type KundeDetailProps = {
     unternehmensname: string | null;
     ansprechpartner: string | null;
     emailAnsprechpartner: string | null;
+    freigabeVerantwortlicher: string | null;
+    emailFreigabeVerantwortlicher: string | null;
+    freigabeVerantwortlicher2: string | null;
+    emailFreigabeVerantwortlicher2: string | null;
     branche: string | null;
     telefonnummer: string | null;
     statusKunde: string | null;
@@ -70,7 +75,7 @@ type KundeDetailProps = {
   alleKunden: AllesKundenprofil[];
 };
 
-const VALID_TABS = ["kalender", "ideen", "planen", "kpis", "daten", "archiv", "drive", "einstellungen"];
+const VALID_TABS = ["kalender", "ideen", "planen", "kpis", "daten", "archiv", "drive", "social", "einstellungen"];
 
 
 function AdminContentWrapper({
@@ -172,6 +177,7 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
     { id: "daten", label: t.kundeDetailView.kundendaten },
     { id: "archiv", label: t.kundeDetailView.archiv },
     { id: "drive", label: t.kundeDetailView.googleWorkspace },
+    { id: "social", label: "Social Media" },
     { id: "einstellungen", label: t.kundeDetailView.einstellungen },
   ];
 
@@ -207,8 +213,8 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
             </button>
             <span className="text-subtle">/</span>
             <div>
-              <span className="font-semibold text-fg">{kunde.unternehmensname ?? "Kunde"}</span>
-              <span className="text-subtle text-sm ml-2">#{kunde.kundenNr}</span>
+              <span className="font-serif font-bold italic text-fg text-lg tracking-tight">{kunde.unternehmensname ?? "Kunde"}</span>
+              <span className="text-subtle text-xs ml-2">#{kunde.kundenNr}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -283,6 +289,7 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
         {aktuellerTab === "planen" && <PullToRefresh><ContentPlanenTab ideen={sharedIdeen} kundenprofilId={kunde.id} cloudLink={kunde.cloudLink} onIdeaAktiviert={ideaEntfernen} /></PullToRefresh>}
         {aktuellerTab === "archiv" && <PullToRefresh><AdminArchivTab eintraege={kunde.archivEintraege} kundenprofilId={kunde.id} /></PullToRefresh>}
         {aktuellerTab === "drive" && <DrivePostfachBereich cloudLink={kunde.cloudLink} kundenprofilId={kunde.id} />}
+        {aktuellerTab === "social" && <PullToRefresh><SocialAccountsTab kundenprofilId={kunde.id} /></PullToRefresh>}
         {aktuellerTab === "einstellungen" && (
           <EinstellungenTab kunde={kunde} alleKunden={alleKunden} />
         )}
@@ -293,9 +300,28 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
 
 // ── Drive + Postfach Sub-Tab ─────────────────────────────────────────────────
 
-function DrivePostfachBereich({ cloudLink, kundenprofilId }: { cloudLink: string | null; kundenprofilId: string }) {
+function DrivePostfachBereich({ cloudLink: initialCloudLink, kundenprofilId }: { cloudLink: string | null; kundenprofilId: string }) {
   const t = useT();
   const [ansicht, setAnsicht] = useState<"drive" | "postfach">("drive");
+  const [cloudLink, setCloudLink] = useState(initialCloudLink);
+  const [ordnerLaden, setOrdnerLaden] = useState(false);
+  const [ordnerFehler, setOrdnerFehler] = useState("");
+
+  async function handleOrdnerErstellen() {
+    setOrdnerLaden(true);
+    setOrdnerFehler("");
+    try {
+      const res = await fetch(`/api/admin/kunden/${kundenprofilId}/drive`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.fehler ?? "Ordner konnte nicht erstellt werden.");
+      setCloudLink(data.cloudLink);
+    } catch (err) {
+      setOrdnerFehler(err instanceof Error ? err.message : "Fehler beim Erstellen.");
+    } finally {
+      setOrdnerLaden(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center gap-1 bg-elevated border border-divider rounded-xl p-1 mb-6 w-fit btn-group">
@@ -316,7 +342,20 @@ function DrivePostfachBereich({ cloudLink, kundenprofilId }: { cloudLink: string
           {t.kundeDetailView.postfach}
         </button>
       </div>
-      {ansicht === "drive" && <DriveTab cloudLink={cloudLink} />}
+      {ansicht === "drive" && !cloudLink && (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <p className="text-subtle text-sm">Kein Google Drive-Ordner verknüpft.</p>
+          {ordnerFehler && <p className="text-red-500 text-xs max-w-sm">{ordnerFehler}</p>}
+          <button
+            onClick={handleOrdnerErstellen}
+            disabled={ordnerLaden}
+            className="flex items-center gap-2 text-sm bg-accent hover:bg-accent-hover disabled:opacity-50 text-white px-4 py-2 rounded-xl transition-colors font-medium"
+          >
+            {ordnerLaden ? "Wird erstellt…" : "Drive-Ordner anlegen"}
+          </button>
+        </div>
+      )}
+      {ansicht === "drive" && cloudLink && <DriveTab cloudLink={cloudLink} />}
       {ansicht === "postfach" && <PostfachTab kundenprofilId={kundenprofilId} />}
     </div>
   );
@@ -901,6 +940,84 @@ function BenutzerSchnellForm({
   );
 }
 
+function FormularMailSenden({
+  kundeId: kundenprofilId,
+  route,
+  bekannteEmails,
+}: {
+  kundeId: string;
+  route: "content-strategie-mail" | "feedback-mail";
+  bekannteEmails: { email: string; label: string }[];
+}) {
+  const t = useT();
+  const [offen, setOffen] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  async function senden(email: string) {
+    if (!email.trim()) return;
+    setStatus("sending");
+    try {
+      const res = await fetch(`/api/admin/kunden/${kundenprofilId}/${route}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      setStatus(res.ok ? "sent" : "error");
+      if (res.ok) setTimeout(() => { setStatus("idle"); setOffen(false); setEmailInput(""); }, 2000);
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  if (!offen) {
+    return (
+      <button
+        onClick={() => setOffen(true)}
+        className="text-xs px-3 py-1.5 rounded-lg bg-elevated border border-divider text-muted hover:text-fg transition-colors shrink-0"
+      >
+        {t.kundeDetailView.mailSenden}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-2 p-3 rounded-xl border border-divider bg-elevated space-y-2">
+      {bekannteEmails.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {bekannteEmails.map(({ email, label }) => (
+            <button
+              key={email}
+              onClick={() => setEmailInput(email)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${emailInput === email ? "border-accent bg-accent/10 text-accent" : "border-divider text-muted hover:text-fg"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          type="email"
+          value={emailInput}
+          onChange={(e) => setEmailInput(e.target.value)}
+          placeholder={t.kundeDetailView.mailEmpfaenger}
+          className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-canvas border border-divider text-fg placeholder:text-subtle focus:outline-none focus:border-accent"
+          onKeyDown={(e) => e.key === "Enter" && senden(emailInput)}
+        />
+        <button
+          onClick={() => senden(emailInput)}
+          disabled={status === "sending" || !emailInput.trim()}
+          className="text-xs px-3 py-1.5 rounded-lg bg-accent text-white font-medium disabled:opacity-50 transition-colors hover:opacity-90 shrink-0"
+        >
+          {status === "sending" ? "…" : status === "sent" ? t.kundeDetailView.mailGesendet : status === "error" ? t.kundeDetailView.mailFehler : t.kundeDetailView.mailSendenBtn}
+        </button>
+        <button onClick={() => { setOffen(false); setEmailInput(""); setStatus("idle"); }} className="text-xs px-2 py-1.5 rounded-lg text-subtle hover:text-fg transition-colors">✕</button>
+      </div>
+    </div>
+  );
+}
+
 function EinstellungenTab({
   kunde,
   alleKunden,
@@ -925,6 +1042,12 @@ function EinstellungenTab({
     });
   }
 
+  const bekannteEmails = [
+    kunde.emailAnsprechpartner ? { email: kunde.emailAnsprechpartner, label: kunde.ansprechpartner || kunde.emailAnsprechpartner } : null,
+    kunde.emailFreigabeVerantwortlicher ? { email: kunde.emailFreigabeVerantwortlicher, label: kunde.freigabeVerantwortlicher || kunde.emailFreigabeVerantwortlicher } : null,
+    kunde.emailFreigabeVerantwortlicher2 ? { email: kunde.emailFreigabeVerantwortlicher2, label: kunde.freigabeVerantwortlicher2 || kunde.emailFreigabeVerantwortlicher2 } : null,
+  ].filter((e): e is { email: string; label: string } => e !== null);
+
   return (
     <div className="max-w-2xl space-y-4">
       <KlappSektion titel={t.kundeDetailView.startSeite}>
@@ -933,29 +1056,47 @@ function EinstellungenTab({
 
       <KlappSektion titel={t.kundeDetailView.formulare}>
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-fg">{t.kundeDetailView.contentStrategieFragebogen}</p>
-              <p className="text-xs text-subtle mt-0.5 truncate">{t.kundeDetailView.stratHinweis}/{kunde.id}</p>
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-fg">{t.kundeDetailView.contentStrategieFragebogen}</p>
+                <p className="text-xs text-subtle mt-0.5 truncate">{t.kundeDetailView.stratHinweis}/{kunde.id}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => copyLink("content-strategie", `${window.location.origin}/formular/content-strategie/${kunde.id}`)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-elevated border border-divider text-muted hover:text-fg transition-colors"
+                >
+                  {kopiert === "content-strategie" ? t.common.kopiert : t.common.kopieren}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => copyLink("content-strategie", `${window.location.origin}/formular/content-strategie/${kunde.id}`)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-elevated border border-divider text-muted hover:text-fg transition-colors shrink-0"
-            >
-              {kopiert === "content-strategie" ? t.common.kopiert : t.common.kopieren}
-            </button>
+            <FormularMailSenden
+              kundeId={kunde.id}
+              route="content-strategie-mail"
+              bekannteEmails={bekannteEmails}
+            />
           </div>
-          <div className="flex items-center justify-between gap-3 pt-3 border-t border-divider">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-fg">{t.kundeDetailView.kundenfeedbackFormular}</p>
-              <p className="text-xs text-subtle mt-0.5 truncate">{t.kundeDetailView.feedbackHinweis}/{kunde.id}</p>
+          <div className="pt-3 border-t border-divider">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-fg">{t.kundeDetailView.kundenfeedbackFormular}</p>
+                <p className="text-xs text-subtle mt-0.5 truncate">{t.kundeDetailView.feedbackHinweis}/{kunde.id}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => copyLink("feedback", `${window.location.origin}/formular/feedback/${kunde.id}`)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-elevated border border-divider text-muted hover:text-fg transition-colors"
+                >
+                  {kopiert === "feedback" ? t.common.kopiert : t.common.kopieren}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => copyLink("feedback", `${window.location.origin}/formular/feedback/${kunde.id}`)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-elevated border border-divider text-muted hover:text-fg transition-colors shrink-0"
-            >
-              {kopiert === "feedback" ? t.common.kopiert : t.common.kopieren}
-            </button>
+            <FormularMailSenden
+              kundeId={kunde.id}
+              route="feedback-mail"
+              bekannteEmails={bekannteEmails}
+            />
           </div>
         </div>
       </KlappSektion>
