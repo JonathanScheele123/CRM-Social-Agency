@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDriveClient } from "@/lib/drive";
+import { getDriveFileMeta, findOrCreateDriveFolder, updateDriveFile } from "@/lib/drive";
 
 function fileIdAusDriveLink(url: string | null): string | null {
   if (!url) return null;
@@ -24,31 +24,12 @@ function dateinameBerechnen(titel: string | null, geplantAm: Date | null): strin
   return d ? `${t} ${d}` : t;
 }
 
-async function ordnerFindenOderErstellen(
-  drive: ReturnType<typeof getDriveClient>,
-  name: string,
-  parentId: string
-): Promise<string> {
-  const search = await drive.files.list({
-    q: `name='${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: "files(id)",
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
-  if (search.data.files && search.data.files.length > 0) {
-    return search.data.files[0].id!;
-  }
-  const created = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId],
-    },
-    fields: "id",
-    supportsAllDrives: true,
-  });
-  return created.data.id!;
-}
+const ALT_ORDNER: Record<string, string> = {
+  Reel: "Alt Reels",
+  Story: "Alt Stories",
+  Karussell: "Alt Karussell",
+  Bild: "Alt Bild",
+};
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -73,7 +54,6 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const drive = getDriveClient();
   const ergebnisse: { id: string; ok: boolean; fehler?: string }[] = [];
 
   for (const eintrag of eintraege) {
@@ -84,36 +64,18 @@ export async function GET(req: NextRequest) {
       const rootFolderId = rootFolderIdAusCloudLink(eintrag.kundenprofil.cloudLink);
       if (!rootFolderId) throw new Error("Kein Cloud-Link beim Kundenprofil");
 
-      // Get current parents of the file
-      const meta = await drive.files.get({
-        fileId,
-        fields: "parents",
-        supportsAllDrives: true,
-      });
-      const removeParents = (meta.data.parents ?? []).join(",");
+      const meta = await getDriveFileMeta(fileId) as { thumbnailLink?: string; mimeType?: string; parents?: string[] };
+      const removeParents = (meta as { parents?: string[] }).parents?.join(",") ?? "";
 
-      // Map contentTyp → Alt-Unterordner-Name
-      const ALT_ORDNER: Record<string, string> = {
-        Reel:      "Alt Reels",
-        Story:     "Alt Stories",
-        Karussell: "Alt Karussell",
-        Bild:      "Alt Bild",
-      };
       const altOrdnerName = (eintrag.contentTyp && ALT_ORDNER[eintrag.contentTyp]) || "Alt Reels";
-
-      // Navigate: root → Fertige Projekte → Alt X
-      const fertigeProjekteId = await ordnerFindenOderErstellen(drive, "Fertige Projekte", rootFolderId);
-      const zielOrdnerId = await ordnerFindenOderErstellen(drive, altOrdnerName, fertigeProjekteId);
-
+      const fertigeProjekteId = await findOrCreateDriveFolder(rootFolderId, "Fertige Projekte");
+      const zielOrdnerId = await findOrCreateDriveFolder(fertigeProjekteId, altOrdnerName);
       const neuerName = dateinameBerechnen(eintrag.titel, eintrag.geplantAm);
 
-      await drive.files.update({
-        fileId,
+      await updateDriveFile(fileId, {
+        name: neuerName,
         addParents: zielOrdnerId,
         removeParents: removeParents || undefined,
-        supportsAllDrives: true,
-        requestBody: { name: neuerName },
-        fields: "id,name,parents",
       });
 
       await prisma.kalenderEintrag.update({

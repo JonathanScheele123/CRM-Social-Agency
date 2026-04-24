@@ -1,7 +1,12 @@
 import { auth } from "@/auth";
-import { getDriveClient } from "@/lib/drive";
+import {
+  getDriveFiles,
+  uploadDriveFile,
+  createDriveFolder,
+  deleteDriveFile,
+  moveDriveFile,
+} from "@/lib/drive";
 import { NextRequest } from "next/server";
-import { Readable } from "stream";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -15,16 +20,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const drive = getDriveClient();
-    const res = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields: "files(id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink)",
-      orderBy: "folder,name",
-      pageSize: 200,
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-    });
-    return Response.json({ files: res.data.files ?? [] });
+    const files = await getDriveFiles(folderId);
+    return Response.json({ files });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[Drive GET]", msg);
@@ -47,27 +44,16 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return Response.json({ fehler: "Keine Datei angegeben." }, { status: 400 });
 
-  const drive = getDriveClient();
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const stream = Readable.from(buffer);
-
-  const res = await drive.files.create({
-    supportsAllDrives: true,
-    requestBody: {
-      name: file.name,
-      parents: [folderId],
-    },
-    media: {
-      mimeType: file.type || "application/octet-stream",
-      body: stream,
-    },
-    fields: "id,name,mimeType,size,modifiedTime,webViewLink",
-  });
-
-  return Response.json({ file: res.data }, { status: 201 });
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await uploadDriveFile(folderId, file.name, file.type || "application/octet-stream", buffer);
+    return Response.json({ file: result }, { status: 201 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return Response.json({ fehler: msg }, { status: 500 });
+  }
 }
 
-// Neuen Ordner erstellen
 export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user || session.user.rolle !== "ADMIN") {
@@ -82,21 +68,15 @@ export async function PUT(req: NextRequest) {
   const { name } = await req.json();
   if (!name?.trim()) return Response.json({ fehler: "Name fehlt." }, { status: 400 });
 
-  const drive = getDriveClient();
-  const res = await drive.files.create({
-    supportsAllDrives: true,
-    requestBody: {
-      name: name.trim(),
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId],
-    },
-    fields: "id,name,mimeType,modifiedTime",
-  });
-
-  return Response.json({ file: res.data }, { status: 201 });
+  try {
+    const folder = await createDriveFolder(parentId, name.trim());
+    return Response.json({ file: folder }, { status: 201 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return Response.json({ fehler: msg }, { status: 500 });
+  }
 }
 
-// Datei in anderen Ordner verschieben
 export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session?.user || session.user.rolle !== "ADMIN") {
@@ -110,16 +90,8 @@ export async function PATCH(req: NextRequest) {
   if (!targetFolderId) return Response.json({ fehler: "targetFolderId fehlt." }, { status: 400 });
   if (!sourceFolderId) return Response.json({ fehler: "sourceFolderId fehlt." }, { status: 400 });
 
-  const drive = getDriveClient();
   try {
-    await drive.files.update({
-      fileId,
-      addParents: targetFolderId,
-      removeParents: sourceFolderId,
-      supportsAllDrives: true,
-      requestBody: {},
-      fields: "id,parents",
-    });
+    await moveDriveFile(fileId, targetFolderId, sourceFolderId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return Response.json({ fehler: `Drive-Fehler: ${msg}` }, { status: 500 });
@@ -137,8 +109,12 @@ export async function DELETE(req: NextRequest) {
   const fileId = req.nextUrl.searchParams.get("fileId");
   if (!fileId) return Response.json({ fehler: "fileId fehlt." }, { status: 400 });
 
-  const drive = getDriveClient();
-  await drive.files.delete({ fileId });
+  try {
+    await deleteDriveFile(fileId);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return Response.json({ fehler: msg }, { status: 500 });
+  }
 
   return Response.json({ ok: true });
 }

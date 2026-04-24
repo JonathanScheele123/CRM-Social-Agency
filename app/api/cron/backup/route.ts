@@ -1,31 +1,8 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDriveClient } from "@/lib/drive";
-import { Readable } from "stream";
+import { findOrCreateDriveFolder, uploadDriveFile } from "@/lib/drive";
 
 const BACKUP_FOLDER_NAME = "CRM Backup";
-const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!;
-
-async function findOrCreateBackupFolder(drive: ReturnType<typeof getDriveClient>): Promise<string> {
-  const search = await drive.files.list({
-    q: `name='${BACKUP_FOLDER_NAME}' and '${ROOT_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: "files(id)",
-  });
-
-  if (search.data.files && search.data.files.length > 0) {
-    return search.data.files[0].id!;
-  }
-
-  const created = await drive.files.create({
-    requestBody: {
-      name: BACKUP_FOLDER_NAME,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [ROOT_FOLDER_ID],
-    },
-    fields: "id",
-  });
-  return created.data.id!;
-}
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -57,7 +34,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const kundenIds = kunden.map(k => k.id);
+    const kundenIds = kunden.map((k) => k.id);
     const auditLogs = await prisma.auditLog.findMany({
       where: { entitaetId: { in: kundenIds } },
       orderBy: { createdAt: "desc" },
@@ -72,23 +49,12 @@ export async function GET(req: NextRequest) {
       audit_logs: auditLogs,
     };
 
+    const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+    if (!rootFolderId) throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID nicht gesetzt.");
+
+    const folderId = await findOrCreateDriveFolder(rootFolderId, BACKUP_FOLDER_NAME);
     const json = JSON.stringify(backup, null, 2);
-    const drive = getDriveClient();
-    const folderId = await findOrCreateBackupFolder(drive);
-
-    const stream = Readable.from([Buffer.from(json, "utf-8")]);
-
-    await drive.files.create({
-      requestBody: {
-        name: dateiname,
-        mimeType: "application/json",
-        parents: [folderId],
-      },
-      media: {
-        mimeType: "application/json",
-        body: stream,
-      },
-    });
+    await uploadDriveFile(folderId, dateiname, "application/json", Buffer.from(json, "utf-8"));
 
     return Response.json({ ok: true, datei: dateiname, kunden: kunden.length });
   } catch (err) {
