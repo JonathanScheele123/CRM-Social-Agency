@@ -103,6 +103,18 @@ export async function GET(req: NextRequest) {
     const rawPagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name&access_token=${longToken.access_token}`);
     debug.rawPages = await rawPagesRes.json();
 
+    // Try direct Instagram accounts endpoint
+    const igDirectRes = await fetch(`https://graph.facebook.com/v21.0/me/instagram_accounts?fields=id,username,name,followers_count&access_token=${longToken.access_token}`);
+    debug.igDirect = await igDirectRes.json();
+
+    // Try businesses endpoint
+    const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name&access_token=${longToken.access_token}`);
+    debug.businesses = await bizRes.json();
+
+    // Try with short-lived token for /me/accounts (before long-lived exchange)
+    const pagesShortRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,instagram_business_account{id,username,name}&access_token=${tokenData.access_token}`);
+    debug.pagesShortToken = await pagesShortRes.json();
+
     const { igAccounts, fbPages } = await getAccounts(longToken.access_token);
     debug.igAccounts = igAccounts.map(a => ({ id: a.igAccountId, handle: a.igUsername }));
     debug.fbPages = fbPages.map(p => ({ id: p.pageId, name: p.pageName }));
