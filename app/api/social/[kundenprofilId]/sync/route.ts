@@ -100,6 +100,70 @@ async function syncInstagramAccount(account: {
   return { follower: profile.followers_count, reach: totalReach, topPost: topPostText };
 }
 
+async function syncFacebookPage(account: {
+  id: string;
+  accountId: string;
+  accountName: string | null;
+  pageToken: string | null;
+  kundenprofilId: string;
+}) {
+  const token = account.pageToken;
+  if (!token) throw new Error("Kein Page-Token");
+
+  const profileRes = await fetch(
+    `https://graph.facebook.com/v21.0/${account.accountId}?fields=id,name,fan_count,followers_count&access_token=${token}`
+  );
+  const profile = await profileRes.json();
+
+  const now = Math.floor(Date.now() / 1000);
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+
+  const insightsRes = await fetch(
+    `https://graph.facebook.com/v21.0/${account.accountId}/insights?metric=page_impressions,page_reach&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${token}`
+  );
+  const insights = await insightsRes.json();
+
+  let totalReach = 0;
+  let totalImpressions = 0;
+
+  if (Array.isArray(insights.data)) {
+    for (const metric of insights.data) {
+      const total = (metric.values ?? []).reduce(
+        (sum: number, v: { value: number }) => sum + (v.value || 0), 0
+      );
+      if (metric.name === "page_reach") totalReach = total;
+      if (metric.name === "page_impressions") totalImpressions = total;
+    }
+  }
+
+  const now2 = new Date();
+  const monatJahr = `${now2.toLocaleString("de-DE", { month: "long" })} ${now2.getFullYear()}`;
+  const plattformLabel = `Facebook (${account.accountName ?? account.accountId})`;
+
+  const kpiData = {
+    reichweite: totalReach || null,
+    impressionen: totalImpressions || null,
+    follower: profile.fan_count ?? profile.followers_count ?? null,
+    kpiTyp: "auto",
+  };
+
+  const existing = await prisma.kPI.findFirst({
+    where: { kundenprofilId: account.kundenprofilId, plattform: plattformLabel, monatJahr },
+  });
+
+  if (existing) {
+    await prisma.kPI.update({ where: { id: existing.id }, data: kpiData });
+  } else {
+    await prisma.kPI.create({
+      data: { kundenprofilId: account.kundenprofilId, plattform: plattformLabel, monatJahr, ...kpiData },
+    });
+  }
+
+  await prisma.socialAccount.update({ where: { id: account.id }, data: { syncedAt: new Date() } });
+
+  return { follower: profile.fan_count, reach: totalReach };
+}
+
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ kundenprofilId: string }> }
@@ -115,10 +179,15 @@ export async function POST(
   const results = [];
   for (const account of accounts) {
     try {
-      const result = await syncInstagramAccount(account);
-      results.push({ accountId: account.accountId, success: true, ...result });
+      let result;
+      if (account.plattform === "facebook") {
+        result = await syncFacebookPage(account);
+      } else {
+        result = await syncInstagramAccount(account);
+      }
+      results.push({ accountId: account.accountId, plattform: account.plattform, success: true, ...result });
     } catch (err) {
-      results.push({ accountId: account.accountId, success: false, error: String(err) });
+      results.push({ accountId: account.accountId, plattform: account.plattform, success: false, error: String(err) });
     }
   }
 

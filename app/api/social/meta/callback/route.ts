@@ -12,14 +12,21 @@ async function getLongLivedToken(shortToken: string) {
   return res.json() as Promise<{ access_token: string; expires_in: number }>;
 }
 
-async function getInstagramAccounts(userToken: string) {
+async function getAccounts(userToken: string) {
   const pagesRes = await fetch(
-    `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&access_token=${userToken}`
+    `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,fan_count&access_token=${userToken}`
   );
   const pagesData = await pagesRes.json();
   console.log("[social/cb] pages:", JSON.stringify({ count: pagesData.data?.length, error: pagesData.error }));
 
-  if (!pagesData.data?.length) return [];
+  if (!pagesData.data?.length) return { igAccounts: [], fbPages: [] };
+
+  const igAccounts: { igAccountId: string; igAccountName: string; igUsername: string; pageId: string; pageToken: string }[] = [];
+  const fbPages: { pageId: string; pageName: string; pageToken: string }[] = [];
+
+  for (const page of pagesData.data) {
+    fbPages.push({ pageId: page.id, pageName: page.name ?? "", pageToken: page.access_token });
+  }
 
   const results: { igAccountId: string; igAccountName: string; igUsername: string; pageId: string; pageToken: string }[] = [];
 
@@ -45,7 +52,7 @@ async function getInstagramAccounts(userToken: string) {
       pageToken: page.access_token,
     });
   }
-  return results;
+  return { igAccounts: results, fbPages };
 }
 
 export async function GET(req: NextRequest) {
@@ -79,20 +86,30 @@ export async function GET(req: NextRequest) {
     const longToken = await getLongLivedToken(tokenData.access_token);
     if (!longToken.access_token) throw new Error(`No long token: ${JSON.stringify(longToken)}`);
 
-    const igAccounts = await getInstagramAccounts(longToken.access_token);
+    const { igAccounts, fbPages } = await getAccounts(longToken.access_token);
 
-    if (igAccounts.length === 0) {
+    if (igAccounts.length === 0 && fbPages.length === 0) {
       const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
       url.searchParams.set("social", "kein-business-account");
       url.searchParams.set("tab", "social");
       return NextResponse.redirect(url);
     }
 
+    const expiry = new Date(Date.now() + longToken.expires_in * 1000);
+
     for (const account of igAccounts) {
       await prisma.socialAccount.upsert({
         where: { kundenprofilId_plattform_accountId: { kundenprofilId, plattform: "instagram", accountId: account.igAccountId } },
-        update: { accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: new Date(Date.now() + longToken.expires_in * 1000) },
-        create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "instagram", accountId: account.igAccountId, accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: new Date(Date.now() + longToken.expires_in * 1000) },
+        update: { accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: expiry },
+        create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "instagram", accountId: account.igAccountId, accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: expiry },
+      });
+    }
+
+    for (const page of fbPages) {
+      await prisma.socialAccount.upsert({
+        where: { kundenprofilId_plattform_accountId: { kundenprofilId, plattform: "facebook", accountId: page.pageId } },
+        update: { accountName: page.pageName, accessToken: longToken.access_token, pageToken: page.pageToken, tokenExpiry: expiry },
+        create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "facebook", accountId: page.pageId, accountName: page.pageName, accessToken: longToken.access_token, pageToken: page.pageToken, tokenExpiry: expiry },
       });
     }
 

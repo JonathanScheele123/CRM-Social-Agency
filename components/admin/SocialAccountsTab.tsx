@@ -137,8 +137,8 @@ export default function SocialAccountsTab({ kundenprofilId }: { kundenprofilId: 
             return (
               <div key={account.id} className="glass-modal rounded-2xl p-5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                    IG
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${account.plattform === "facebook" ? "bg-gradient-to-br from-blue-600 to-blue-400" : "bg-gradient-to-br from-purple-500 to-pink-500"}`}>
+                    {account.plattform === "facebook" ? "FB" : "IG"}
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-fg text-sm truncate">
