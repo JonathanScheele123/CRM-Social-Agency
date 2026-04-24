@@ -1,23 +1,19 @@
-import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.rolle !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export async function GET(_req: NextRequest) {
   const appId = process.env.META_APP_ID;
-  const secret = process.env.META_APP_SECRET;
   const redirectUri = process.env.META_REDIRECT_URI;
 
-  const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=pages_show_list&response_type=code&state=test`;
+  const html = `<pre style="font-size:18px;padding:40px;background:#111;color:#4ade80;font-family:monospace">
+META_APP_ID      : "${appId ?? "FEHLT"}" (${appId?.length ?? 0} Zeichen)
+META_REDIRECT_URI: "${redirectUri ?? "FEHLT"}"
 
-  return NextResponse.json({
-    META_APP_ID: appId ?? "FEHLT",
-    META_APP_ID_length: appId?.length ?? 0,
-    META_APP_SECRET: secret ? `${secret.substring(0, 4)}...${secret.substring(secret.length - 4)}` : "FEHLT",
-    META_REDIRECT_URI: redirectUri ?? "FEHLT",
-    constructed_oauth_url: oauthUrl,
-  });
+OAuth URL wäre:
+https://www.facebook.com/v21.0/dialog/oauth
+  ?client_id=${appId}
+  &redirect_uri=${redirectUri}
+  &scope=pages_show_list,...
+</pre>`;
+
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
