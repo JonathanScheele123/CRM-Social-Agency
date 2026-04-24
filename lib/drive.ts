@@ -1,5 +1,6 @@
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
+const NO_COMPRESS = { "Accept-Encoding": "identity" };
 
 function b64url(data: string | ArrayBuffer): string {
   const bytes =
@@ -57,13 +58,13 @@ async function getAccessToken(): Promise<string> {
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: { "Content-Type": "application/x-www-form-urlencoded", ...NO_COMPRESS },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Drive-Auth fehlgeschlagen: ${text}`);
+    const errData = await res.json().catch(() => null) as { error?: string; error_description?: string } | null;
+    throw new Error(`Drive-Auth fehlgeschlagen: ${errData?.error_description ?? errData?.error ?? `HTTP ${res.status}`}`);
   }
 
   const { access_token } = (await res.json()) as { access_token: string };
@@ -76,6 +77,7 @@ async function drivePost(token: string, path: string, body: unknown): Promise<{ 
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      ...NO_COMPRESS,
     },
     body: JSON.stringify(body),
   });
@@ -88,7 +90,7 @@ async function drivePost(token: string, path: string, body: unknown): Promise<{ 
 
 async function driveGet(token: string, path: string): Promise<{ id: string }> {
   const res = await fetch(`${DRIVE_API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS },
   });
   if (!res.ok) throw new Error(`Drive GET Fehler ${res.status}`);
   return res.json();
@@ -146,7 +148,7 @@ export async function getDriveFiles(folderId: string): Promise<unknown[]> {
   const fields = encodeURIComponent("files(id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink)");
   const res = await fetch(
     `${DRIVE_API}/files?q=${q}&fields=${fields}&orderBy=folder%2Cname&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS } }
   );
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
@@ -181,6 +183,7 @@ export async function uploadDriveFile(
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": `multipart/related; boundary=${boundary}`,
+        ...NO_COMPRESS,
       },
       body: combined,
     }
@@ -205,7 +208,7 @@ export async function deleteDriveFile(fileId: string): Promise<void> {
   const token = await getAccessToken();
   const res = await fetch(`${DRIVE_API}/files/${fileId}?supportsAllDrives=true`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS },
   });
   if (!res.ok && res.status !== 204) {
     throw new Error(`Löschen fehlgeschlagen: HTTP ${res.status}`);
@@ -222,7 +225,7 @@ export async function moveDriveFile(
     `${DRIVE_API}/files/${fileId}?addParents=${targetFolderId}&removeParents=${sourceFolderId}&supportsAllDrives=true&fields=id`,
     {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...NO_COMPRESS },
       body: "{}",
     }
   );
@@ -247,7 +250,7 @@ export async function getDriveFileMeta(
   const token = await getAccessToken();
   const res = await fetch(
     `${DRIVE_API}/files/${fileId}?fields=thumbnailLink,mimeType,name&supportsAllDrives=true`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS } }
   );
   if (!res.ok) throw new Error(`Meta-Abruf fehlgeschlagen: HTTP ${res.status}`);
   return res.json();
@@ -257,7 +260,7 @@ export async function downloadDriveFile(fileId: string): Promise<{ buffer: Array
   const token = await getAccessToken();
   const meta = await getDriveFileMeta(fileId);
   const res = await fetch(`${DRIVE_API}/files/${fileId}?alt=media&supportsAllDrives=true`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS },
   });
   if (!res.ok) throw new Error(`Download fehlgeschlagen: HTTP ${res.status}`);
   return { buffer: await res.arrayBuffer(), mimeType: meta.mimeType ?? "application/octet-stream" };
@@ -270,7 +273,7 @@ export async function findOrCreateDriveFolder(parentId: string, name: string): P
   );
   const searchRes = await fetch(
     `${DRIVE_API}/files?q=${q}&fields=files(id)&supportsAllDrives=true&includeItemsFromAllDrives=true`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS } }
   );
   if (searchRes.ok) {
     const data = (await searchRes.json()) as { files?: { id: string }[] };
@@ -294,7 +297,7 @@ export async function updateDriveFile(
   if (options.removeParents) params.set("removeParents", options.removeParents);
   const res = await fetch(`${DRIVE_API}/files/${fileId}?${params}`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...NO_COMPRESS },
     body: JSON.stringify(options.name ? { name: options.name } : {}),
   });
   if (!res.ok) {
