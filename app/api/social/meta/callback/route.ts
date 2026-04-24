@@ -6,62 +6,16 @@ const APP_ID = process.env.META_APP_ID ?? "925546743581623";
 const APP_SECRET = process.env.META_APP_SECRET ?? "cbfb55cb7298cb97527487cfec212bd6";
 const REDIRECT_URI = process.env.META_REDIRECT_URI ?? "https://crm.jonathanscheele.de/api/social/meta/callback";
 
-async function getLongLivedToken(shortToken: string) {
-  const url = `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${APP_ID}&client_secret=${APP_SECRET}&fb_exchange_token=${shortToken}`;
-  const res = await fetch(url);
-  return res.json() as Promise<{ access_token: string; expires_in: number }>;
-}
-
-async function getAccounts(userToken: string) {
-  const pagesRes = await fetch(
-    `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,fan_count&access_token=${userToken}`
-  );
-  const pagesData = await pagesRes.json();
-  console.log("[social/cb] pages:", JSON.stringify({ count: pagesData.data?.length, error: pagesData.error }));
-
-  if (!pagesData.data?.length) return { igAccounts: [], fbPages: [] };
-
-  const igAccounts: { igAccountId: string; igAccountName: string; igUsername: string; pageId: string; pageToken: string }[] = [];
-  const fbPages: { pageId: string; pageName: string; pageToken: string }[] = [];
-
-  for (const page of pagesData.data) {
-    fbPages.push({ pageId: page.id, pageName: page.name ?? "", pageToken: page.access_token });
-  }
-
-  const results: { igAccountId: string; igAccountName: string; igUsername: string; pageId: string; pageToken: string }[] = [];
-
-  for (const page of pagesData.data) {
-    const igRes = await fetch(
-      `https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
-    );
-    const igData = await igRes.json();
-    if (!igData.instagram_business_account?.id) continue;
-
-    const igId = igData.instagram_business_account.id;
-    const detailRes = await fetch(
-      `https://graph.facebook.com/v21.0/${igId}?fields=id,name,username,followers_count&access_token=${page.access_token}`
-    );
-    const detail = await detailRes.json();
-    console.log("[social/cb] ig account:", JSON.stringify({ id: igId, username: detail.username }));
-
-    results.push({
-      igAccountId: igId,
-      igAccountName: detail.name ?? "",
-      igUsername: detail.username ?? "",
-      pageId: page.id,
-      pageToken: page.access_token,
-    });
-  }
-  return { igAccounts: results, fbPages };
-}
-
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
   const error = req.nextUrl.searchParams.get("error");
 
   if (error || !code || !state) {
-    return new NextResponse(`<pre>FEHLER: error=${error}, code=${!!code}, state=${!!state}</pre>`, { headers: { "Content-Type": "text/html" } });
+    return new NextResponse(
+      `<pre style="font-family:monospace;padding:40px;background:#111;color:#f87171">FEHLER: error=${error}, code=${!!code}</pre>`,
+      { headers: { "Content-Type": "text/html" } }
+    );
   }
 
   let kundenprofilId: string;
@@ -76,76 +30,60 @@ export async function GET(req: NextRequest) {
   const debug: Record<string, unknown> = { kundenprofilId };
 
   try {
-    const tokenRes = await fetch("https://graph.facebook.com/v21.0/oauth/access_token", {
+    // Exchange code for short-lived token via Instagram API
+    const tokenRes = await fetch("https://api.instagram.com/oauth/access_token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ client_id: APP_ID, client_secret: APP_SECRET, redirect_uri: REDIRECT_URI, code }),
+      body: new URLSearchParams({
+        client_id: APP_ID,
+        client_secret: APP_SECRET,
+        grant_type: "authorization_code",
+        redirect_uri: REDIRECT_URI,
+        code,
+      }),
     });
     const tokenData = await tokenRes.json();
-    debug.tokenOk = !!tokenData.access_token;
-    debug.tokenError = tokenData.error;
-    if (!tokenData.access_token) throw new Error(`No token: ${JSON.stringify(tokenData)}`);
+    debug.shortToken = { ok: !!tokenData.access_token, user_id: tokenData.user_id, error: tokenData.error_message };
 
-    const longToken = await getLongLivedToken(tokenData.access_token);
-    debug.longTokenOk = !!longToken.access_token;
+    if (!tokenData.access_token) throw new Error(`No short token: ${JSON.stringify(tokenData)}`);
+
+    // Exchange for long-lived token (60 days)
+    const longRes = await fetch(
+      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=${APP_ID}&client_secret=${APP_SECRET}&access_token=${tokenData.access_token}`
+    );
+    const longToken = await longRes.json();
+    debug.longToken = { ok: !!longToken.access_token, expires: longToken.expires_in };
+
     if (!longToken.access_token) throw new Error(`No long token: ${JSON.stringify(longToken)}`);
 
-    // Check who is logged in
-    const meRes = await fetch(`https://graph.facebook.com/v21.0/me?fields=id,name&access_token=${longToken.access_token}`);
-    debug.me = await meRes.json();
+    // Get profile
+    const profileRes = await fetch(
+      `https://graph.instagram.com/v21.0/me?fields=id,name,username,followers_count&access_token=${longToken.access_token}`
+    );
+    const profile = await profileRes.json();
+    debug.profile = { id: profile.id, username: profile.username, followers: profile.followers_count, error: profile.error };
 
-    // Check granted permissions
-    const permRes = await fetch(`https://graph.facebook.com/v21.0/me/permissions?access_token=${longToken.access_token}`);
-    const permData = await permRes.json();
-    debug.permissions = (permData.data ?? []).map((p: { permission: string; status: string }) => `${p.permission}:${p.status}`);
-
-    // Raw pages response
-    const rawPagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name&access_token=${longToken.access_token}`);
-    debug.rawPages = await rawPagesRes.json();
-
-    // Try direct Instagram accounts endpoint
-    const igDirectRes = await fetch(`https://graph.facebook.com/v21.0/me/instagram_accounts?fields=id,username,name,followers_count&access_token=${longToken.access_token}`);
-    debug.igDirect = await igDirectRes.json();
-
-    // Try businesses endpoint
-    const bizRes = await fetch(`https://graph.facebook.com/v21.0/me/businesses?fields=id,name&access_token=${longToken.access_token}`);
-    debug.businesses = await bizRes.json();
-
-    // Try with short-lived token for /me/accounts (before long-lived exchange)
-    const pagesShortRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name,instagram_business_account{id,username,name}&access_token=${tokenData.access_token}`);
-    debug.pagesShortToken = await pagesShortRes.json();
-
-    const { igAccounts, fbPages } = await getAccounts(longToken.access_token);
-    debug.igAccounts = igAccounts.map(a => ({ id: a.igAccountId, handle: a.igUsername }));
-    debug.fbPages = fbPages.map(p => ({ id: p.pageId, name: p.pageName }));
-
-    if (igAccounts.length === 0 && fbPages.length === 0) {
-      return new NextResponse(`<pre style="font-family:monospace;padding:40px;background:#111;color:#f87171">KEIN ACCOUNT GEFUNDEN\n\n${JSON.stringify(debug, null, 2)}</pre>`, { headers: { "Content-Type": "text/html" } });
-    }
+    if (!profile.id) throw new Error(`No profile: ${JSON.stringify(profile)}`);
 
     const expiry = new Date(Date.now() + longToken.expires_in * 1000);
 
-    for (const account of igAccounts) {
-      await prisma.socialAccount.upsert({
-        where: { kundenprofilId_plattform_accountId: { kundenprofilId, plattform: "instagram", accountId: account.igAccountId } },
-        update: { accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: expiry },
-        create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "instagram", accountId: account.igAccountId, accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: expiry },
-      });
-    }
+    await prisma.socialAccount.upsert({
+      where: { kundenprofilId_plattform_accountId: { kundenprofilId, plattform: "instagram", accountId: String(profile.id) } },
+      update: { accountName: profile.name ?? null, accountHandle: profile.username ?? null, accessToken: longToken.access_token, tokenExpiry: expiry },
+      create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "instagram", accountId: String(profile.id), accountName: profile.name ?? null, accountHandle: profile.username ?? null, accessToken: longToken.access_token, tokenExpiry: expiry },
+    });
 
-    for (const page of fbPages) {
-      await prisma.socialAccount.upsert({
-        where: { kundenprofilId_plattform_accountId: { kundenprofilId, plattform: "facebook", accountId: page.pageId } },
-        update: { accountName: page.pageName, accessToken: longToken.access_token, pageToken: page.pageToken, tokenExpiry: expiry },
-        create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "facebook", accountId: page.pageId, accountName: page.pageName, accessToken: longToken.access_token, pageToken: page.pageToken, tokenExpiry: expiry },
-      });
-    }
-
-    debug.saved = { ig: igAccounts.length, fb: fbPages.length };
-    return new NextResponse(`<pre style="font-family:monospace;padding:40px;background:#111;color:#4ade80">ERFOLG ✓\n\n${JSON.stringify(debug, null, 2)}</pre>`, { headers: { "Content-Type": "text/html" } });
+    debug.saved = true;
+    return new NextResponse(
+      `<pre style="font-family:monospace;padding:40px;background:#111;color:#4ade80">ERFOLG ✓\n\n${JSON.stringify(debug, null, 2)}</pre>`,
+      { headers: { "Content-Type": "text/html" } }
+    );
 
   } catch (err) {
     debug.exception = String(err);
-    return new NextResponse(`<pre style="font-family:monospace;padding:40px;background:#111;color:#f87171">EXCEPTION\n\n${JSON.stringify(debug, null, 2)}</pre>`, { headers: { "Content-Type": "text/html" } });
+    return new NextResponse(
+      `<pre style="font-family:monospace;padding:40px;background:#111;color:#f87171">EXCEPTION\n\n${JSON.stringify(debug, null, 2)}</pre>`,
+      { headers: { "Content-Type": "text/html" } }
+    );
   }
 }
