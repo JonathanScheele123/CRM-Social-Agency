@@ -180,47 +180,91 @@ export default function KPITab({ kpis, isAdmin = false, kundenprofilId, kpisFrei
 
       {/* Platform Connection Row */}
       {isAdmin && kundenprofilId && (
-        <div className="bg-card border border-divider rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-medium text-muted uppercase tracking-wider">Verbundene Accounts</p>
+        <div className="bg-card border border-divider rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-semibold text-muted uppercase tracking-wider">Social Media Accounts</p>
             {socialAccounts.length > 0 && (
-              <button onClick={handleSync} disabled={syncing} className="text-xs text-accent hover:underline disabled:opacity-50">
-                {syncing ? "Sync läuft…" : "↺ Synchronisieren"}
+              <button onClick={handleSync} disabled={syncing} className="flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors disabled:opacity-40">
+                <svg className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                {syncing ? "Synchronisiert…" : "Sync"}
               </button>
             )}
           </div>
-          {syncMsg && <p className="text-xs text-green-600 dark:text-green-400 mb-3">{syncMsg}</p>}
-          <div className="flex flex-wrap gap-2">
+          {syncMsg && <p className="text-xs text-green-500 mb-4 flex items-center gap-1.5"><span>✓</span>{syncMsg}</p>}
+
+          <div className="grid grid-cols-4 gap-3">
             {PLATFORMS.map(p => {
               const connected = connectedByPlatform(p.key);
               const isSoon = p.connectsVia === "soon";
+              const isConnected = connected.length > 0;
+
+              const icons: Record<string, React.ReactNode> = {
+                instagram: (
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                  </svg>
+                ),
+                facebook: (
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                ),
+                tiktok: (
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.78a4.85 4.85 0 01-1.01-.09z"/>
+                  </svg>
+                ),
+                youtube: (
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                    <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/>
+                  </svg>
+                ),
+              };
+
+              const gradients: Record<string, string> = {
+                instagram: "from-purple-500 via-pink-500 to-orange-400",
+                facebook:  "from-blue-600 to-blue-500",
+                tiktok:    "from-gray-900 to-gray-700",
+                youtube:   "from-red-600 to-red-500",
+              };
+
+              if (isConnected) {
+                return (
+                  <div key={p.key} className="relative flex flex-col items-center gap-2">
+                    <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradients[p.key]} flex items-center justify-center text-white shadow-lg`}>
+                      {icons[p.key]}
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-card flex items-center justify-center">
+                        <svg viewBox="0 0 10 10" className="w-2 h-2" fill="none" stroke="white" strokeWidth="2"><polyline points="2,5 4,7 8,3"/></svg>
+                      </span>
+                    </div>
+                    {connected.map(a => (
+                      <p key={a.id} className="text-xs text-fg font-medium text-center leading-tight truncate w-full text-center">
+                        {a.accountHandle ? `@${a.accountHandle}` : (a.accountName ?? p.label)}
+                      </p>
+                    ))}
+                  </div>
+                );
+              }
+
+              if (isSoon) {
+                return (
+                  <div key={p.key} className="flex flex-col items-center gap-2 opacity-35">
+                    <div className="w-14 h-14 rounded-2xl bg-elevated border border-dashed border-divider flex items-center justify-center text-muted">
+                      {icons[p.key]}
+                    </div>
+                    <p className="text-xs text-muted text-center">{p.label}</p>
+                    <span className="text-xs text-subtle -mt-1">bald</span>
+                  </div>
+                );
+              }
+
               return (
-                <div key={p.key}>
-                  {connected.length > 0 ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-elevated border border-divider rounded-xl">
-                      <span className="text-sm">{p.icon}</span>
-                      <div>
-                        {connected.map(a => (
-                          <span key={a.id} className="text-xs font-medium text-fg block leading-tight">
-                            {a.accountHandle ? `@${a.accountHandle}` : (a.accountName ?? p.label)}
-                          </span>
-                        ))}
-                      </div>
-                      <span className="w-2 h-2 rounded-full bg-green-500 shrink-0 ml-1" />
-                    </div>
-                  ) : isSoon ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-divider rounded-xl opacity-50 cursor-not-allowed" title="Demnächst verfügbar">
-                      <span className="text-sm">{p.icon}</span>
-                      <span className="text-xs text-muted">{p.label}</span>
-                      <span className="text-xs text-subtle">bald</span>
-                    </div>
-                  ) : (
-                    <a href={`/api/social/meta/connect?kundenprofilId=${kundenprofilId}`} className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-accent/40 hover:border-accent rounded-xl transition-colors group">
-                      <span className="text-sm">{p.icon}</span>
-                      <span className="text-xs text-muted group-hover:text-accent transition-colors">{p.label} verbinden</span>
-                    </a>
-                  )}
-                </div>
+                <a key={p.key} href={`/api/social/meta/connect?kundenprofilId=${kundenprofilId}`} className="flex flex-col items-center gap-2 group">
+                  <div className="w-14 h-14 rounded-2xl bg-elevated border-2 border-dashed border-divider group-hover:border-accent/50 group-hover:bg-accent/5 flex items-center justify-center text-muted group-hover:text-accent transition-all">
+                    {icons[p.key]}
+                  </div>
+                  <p className="text-xs text-muted group-hover:text-accent transition-colors text-center">{p.label}</p>
+                </a>
               );
             })}
           </div>
