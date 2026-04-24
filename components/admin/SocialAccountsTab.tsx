@@ -31,8 +31,13 @@ export default function SocialAccountsTab({ kundenprofilId }: { kundenprofilId: 
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("social") === "error") {
+    const socialParam = params.get("social");
+    if (socialParam === "error") {
       setMeldung({ text: "Verbindung fehlgeschlagen — bitte erneut versuchen.", ok: false });
+    } else if (socialParam === "kein-business-account") {
+      setMeldung({ text: "Kein Instagram Business-Konto gefunden. Das Instagram-Profil muss ein Business- oder Creator-Konto sein und mit einer Facebook-Seite verknüpft sein.", ok: false });
+    }
+    if (socialParam) {
       const url = new URL(window.location.href);
       url.searchParams.delete("social");
       window.history.replaceState({}, "", url.toString());

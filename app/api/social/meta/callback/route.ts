@@ -84,6 +84,13 @@ export async function GET(req: NextRequest) {
     const tokenExpiry = new Date(Date.now() + longToken.expires_in * 1000);
     const igAccounts = await getInstagramAccounts(longToken.access_token);
 
+    if (igAccounts.length === 0) {
+      const redirectUrl = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
+      redirectUrl.searchParams.set("social", "kein-business-account");
+      redirectUrl.hash = "social";
+      return NextResponse.redirect(redirectUrl);
+    }
+
     for (const account of igAccounts) {
       await prisma.socialAccount.upsert({
         where: {
