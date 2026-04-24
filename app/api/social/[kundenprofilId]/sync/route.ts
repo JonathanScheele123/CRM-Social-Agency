@@ -14,22 +14,23 @@ async function syncInstagramAccount(account: {
   id: string;
   accountId: string;
   accountHandle: string | null;
-  pageToken: string | null;
+  accessToken: string;
   kundenprofilId: string;
 }) {
-  const token = account.pageToken;
-  if (!token) throw new Error("Kein Page-Token vorhanden");
+  const token = account.accessToken;
 
+  // Profile + follower count
   const profileRes = await fetch(
-    `https://graph.facebook.com/v21.0/${account.accountId}?fields=id,name,username,followers_count&access_token=${token}`
+    `https://graph.instagram.com/v21.0/me?fields=id,name,username,followers_count&access_token=${token}`
   );
   const profile = await profileRes.json();
 
+  // Monthly insights (last 30 days)
   const now = Math.floor(Date.now() / 1000);
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
 
   const insightsRes = await fetch(
-    `https://graph.facebook.com/v21.0/${account.accountId}/insights?metric=reach,impressions,profile_views&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${token}`
+    `https://graph.instagram.com/v21.0/${account.accountId}/insights?metric=reach,impressions,profile_views&period=day&since=${thirtyDaysAgo}&until=${now}&access_token=${token}`
   );
   const insights = await insightsRes.json();
 
@@ -49,8 +50,9 @@ async function syncInstagramAccount(account: {
     }
   }
 
+  // Recent media for top post
   const mediaRes = await fetch(
-    `https://graph.facebook.com/v21.0/${account.accountId}/media?fields=id,media_type,timestamp,like_count,comments_count&limit=20&access_token=${token}`
+    `https://graph.instagram.com/v21.0/${account.accountId}/media?fields=id,media_type,timestamp,like_count,comments_count&limit=20&access_token=${token}`
   );
   const mediaData = await mediaRes.json();
   const media: MediaItem[] = mediaData.data ?? [];

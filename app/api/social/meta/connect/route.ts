@@ -17,10 +17,10 @@ export async function GET(req: NextRequest) {
   const params = new URLSearchParams({
     client_id: process.env.META_APP_ID!,
     redirect_uri: process.env.META_REDIRECT_URI!,
-    scope: "pages_show_list,pages_read_engagement,instagram_basic,instagram_manage_insights",
+    scope: "instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments",
     response_type: "code",
     state,
   });
 
-  return NextResponse.redirect(`https://www.facebook.com/v21.0/dialog/oauth?${params}`);
+  return NextResponse.redirect(`https://api.instagram.com/oauth/authorize?${params}`);
 }
