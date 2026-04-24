@@ -191,8 +191,11 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
     const hash = window.location.hash.slice(1);
-    if (VALID_TABS.includes(hash)) setAktuellerTab(hash);
+    const target = tabParam ?? hash;
+    if (VALID_TABS.includes(target)) setAktuellerTab(target);
   }, []);
 
   function tabWechseln(id: string) {

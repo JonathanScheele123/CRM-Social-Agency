@@ -91,13 +91,14 @@ export async function GET(req: NextRequest) {
     });
 
     const redirectUrl = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-    redirectUrl.hash = "social";
+    redirectUrl.searchParams.set("social", "success");
+    redirectUrl.searchParams.set("tab", "social");
     return NextResponse.redirect(redirectUrl);
   } catch (err) {
     console.error("[social/ig] callback error:", err);
     const redirectUrl = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
     redirectUrl.searchParams.set("social", "error");
-    redirectUrl.hash = "social";
+    redirectUrl.searchParams.set("tab", "social");
     return NextResponse.redirect(redirectUrl);
   }
 }
