@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
     if (igAccounts.length === 0 && fbPages.length === 0) {
       const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
       url.searchParams.set("social", "kein-business-account");
-      url.searchParams.set("tab", "social");
+      url.searchParams.set("tab", "kpis");
       return NextResponse.redirect(url);
     }
 
@@ -115,13 +115,13 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
     url.searchParams.set("social", "success");
-    url.searchParams.set("tab", "social");
+    url.searchParams.set("tab", "kpis");
     return NextResponse.redirect(url);
   } catch (err) {
     console.error("[social/cb] error:", String(err));
     const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
     url.searchParams.set("social", "error");
-    url.searchParams.set("tab", "social");
+    url.searchParams.set("tab", "kpis");
     return NextResponse.redirect(url);
   }
 }

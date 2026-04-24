@@ -103,8 +103,23 @@ export default function KPITab({ kpis, isAdmin = false, kundenprofilId, kpisFrei
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [socialMsg, setSocialMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string>("alle");
   const [vergleich, setVergleich] = useState(false);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const s = p.get("social");
+    if (s === "success") setSocialMsg({ text: "Account erfolgreich verbunden!", ok: true });
+    else if (s === "kein-business-account") setSocialMsg({ text: "Kein Business-Konto gefunden. Das Instagram-Profil muss ein Business- oder Creator-Konto sein.", ok: false });
+    else if (s === "error") setSocialMsg({ text: "Verbindung fehlgeschlagen — bitte erneut versuchen.", ok: false });
+    if (s) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("social");
+      url.searchParams.delete("tab");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
 
   useEffect(() => {
     if (!kundenprofilId || !isAdmin) return;
@@ -175,6 +190,13 @@ export default function KPITab({ kpis, isAdmin = false, kundenprofilId, kpisFrei
           <button onClick={handleToggle} disabled={togglePending} className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${freigegeben ? "bg-accent" : "bg-divider"}`}>
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${freigegeben ? "translate-x-5" : "translate-x-0"}`} />
           </button>
+        </div>
+      )}
+
+      {/* Social connect feedback */}
+      {socialMsg && (
+        <div className={`rounded-xl px-4 py-3 text-sm flex items-center gap-2 ${socialMsg.ok ? "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400" : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"}`}>
+          {socialMsg.ok ? "✓" : "✕"} {socialMsg.text}
         </div>
       )}
 
