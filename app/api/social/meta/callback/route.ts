@@ -90,6 +90,19 @@ export async function GET(req: NextRequest) {
     debug.longTokenOk = !!longToken.access_token;
     if (!longToken.access_token) throw new Error(`No long token: ${JSON.stringify(longToken)}`);
 
+    // Check who is logged in
+    const meRes = await fetch(`https://graph.facebook.com/v21.0/me?fields=id,name&access_token=${longToken.access_token}`);
+    debug.me = await meRes.json();
+
+    // Check granted permissions
+    const permRes = await fetch(`https://graph.facebook.com/v21.0/me/permissions?access_token=${longToken.access_token}`);
+    const permData = await permRes.json();
+    debug.permissions = (permData.data ?? []).map((p: { permission: string; status: string }) => `${p.permission}:${p.status}`);
+
+    // Raw pages response
+    const rawPagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name&access_token=${longToken.access_token}`);
+    debug.rawPages = await rawPagesRes.json();
+
     const { igAccounts, fbPages } = await getAccounts(longToken.access_token);
     debug.igAccounts = igAccounts.map(a => ({ id: a.igAccountId, handle: a.igUsername }));
     debug.fbPages = fbPages.map(p => ({ id: p.pageId, name: p.pageName }));
