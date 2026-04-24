@@ -173,14 +173,17 @@ export default function DriveTab({ cloudLink }: { cloudLink: string | null }) {
           });
           xhr.addEventListener("load", () => {
             if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`HTTP ${xhr.status}`));
+            else {
+              try { const d = JSON.parse(xhr.responseText); reject(new Error(d.fehler ?? `HTTP ${xhr.status}`)); }
+              catch { reject(new Error(`HTTP ${xhr.status}`)); }
+            }
           });
           xhr.addEventListener("error", () => reject(new Error(t.common.netzwerkFehler)));
           xhr.open("POST", `/api/admin/drive?folderId=${aktuellerOrdner.id}`);
           xhr.send(formData);
         });
-      } catch {
-        setFehler(`${t.driveTab.fehlerHochladen} "${file.name}".`);
+      } catch (err) {
+        setFehler(`${t.driveTab.fehlerHochladen} "${file.name}": ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setFortschritt(prev => { const n = { ...prev }; delete n[file.name]; return n; });
       }

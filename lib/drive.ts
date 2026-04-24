@@ -4,17 +4,33 @@ const NO_COMPRESS = { "Accept-Encoding": "identity" };
 
 async function readJson(res: Response): Promise<unknown> {
   const buf = await res.arrayBuffer();
+
+  // 1. Try plain JSON first (works when CF Workers auto-decompresses)
+  try {
+    return JSON.parse(new TextDecoder().decode(buf));
+  } catch { /* compressed — fall through */ }
+
   const bytes = new Uint8Array(buf);
-  // Gzip magic bytes: 1f 8b
+
+  // 2. Gzip (magic bytes 1f 8b)
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-    const ds = new DecompressionStream("gzip");
-    const writer = ds.writable.getWriter();
-    await writer.write(bytes);
-    await writer.close();
-    const text = await new Response(ds.readable).text();
-    return JSON.parse(text);
+    try {
+      const ds = new DecompressionStream("gzip");
+      const writer = ds.writable.getWriter();
+      await writer.write(bytes);
+      await writer.close();
+      return JSON.parse(await new Response(ds.readable).text());
+    } catch { /* fall through */ }
   }
-  return JSON.parse(new TextDecoder().decode(buf));
+
+  // 3. Brotli via node:zlib (CF Workers nodejs_compat)
+  try {
+    const { brotliDecompressSync } = await import("node:zlib");
+    const decompressed = brotliDecompressSync(Buffer.from(buf));
+    return JSON.parse(decompressed.toString("utf-8"));
+  } catch { /* fall through */ }
+
+  throw new Error("API-Antwort konnte nicht gelesen werden (unbekannte Kodierung)");
 }
 
 function b64url(data: string | ArrayBuffer): string {
