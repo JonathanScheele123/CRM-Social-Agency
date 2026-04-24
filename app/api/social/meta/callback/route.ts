@@ -1,118 +1,45 @@
-import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "crypto";
-
-const APP_ID = process.env.META_APP_ID ?? "925546743581623";
-const APP_SECRET = process.env.META_APP_SECRET ?? "";
-const REDIRECT_URI = process.env.META_REDIRECT_URI ?? "https://crm.jonathanscheele.de/api/social/meta/callback";
-
-async function getLongLivedToken(shortToken: string) {
-  const url = `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${APP_ID}&client_secret=${APP_SECRET}&fb_exchange_token=${shortToken}`;
-  const res = await fetch(url);
-  return res.json() as Promise<{ access_token: string; expires_in: number }>;
-}
-
-async function getInstagramAccounts(userToken: string) {
-  const pagesRes = await fetch(
-    `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&access_token=${userToken}`
-  );
-  const pagesData = await pagesRes.json();
-  console.log("[social/cb] pages:", JSON.stringify({ count: pagesData.data?.length, error: pagesData.error }));
-
-  if (!pagesData.data?.length) return [];
-
-  const results: { igAccountId: string; igAccountName: string; igUsername: string; pageId: string; pageToken: string }[] = [];
-
-  for (const page of pagesData.data) {
-    const igRes = await fetch(
-      `https://graph.facebook.com/v21.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
-    );
-    const igData = await igRes.json();
-    if (!igData.instagram_business_account?.id) continue;
-
-    const igId = igData.instagram_business_account.id;
-    const detailRes = await fetch(
-      `https://graph.facebook.com/v21.0/${igId}?fields=id,name,username,followers_count&access_token=${page.access_token}`
-    );
-    const detail = await detailRes.json();
-    console.log("[social/cb] ig account:", JSON.stringify({ id: igId, username: detail.username }));
-
-    results.push({
-      igAccountId: igId,
-      igAccountName: detail.name ?? "",
-      igUsername: detail.username ?? "",
-      pageId: page.id,
-      pageToken: page.access_token,
-    });
-  }
-  return results;
-}
 
 export async function GET(req: NextRequest) {
-  const code = req.nextUrl.searchParams.get("code");
-  const state = req.nextUrl.searchParams.get("state");
+  const params: Record<string, string> = {};
+  req.nextUrl.searchParams.forEach((value, key) => {
+    params[key] = key === "code" ? `${value.substring(0, 20)}...(${value.length} Zeichen)` : value;
+  });
+
+  const hasCode = !!req.nextUrl.searchParams.get("code");
   const error = req.nextUrl.searchParams.get("error");
 
-  console.log("[social/cb] incoming — error:", error, "has_code:", !!code);
+  const html = `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"><title>OAuth Debug</title>
+<style>
+  body{font-family:monospace;padding:40px;background:#0f0f0f;color:#e5e5e5;max-width:800px;margin:0 auto;}
+  h1{color:#a855f7;}
+  .box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:16px 0;}
+  .key{color:#60a5fa;font-weight:bold;}
+  .val{color:#fbbf24;}
+  .ok{color:#4ade80;font-size:18px;font-weight:bold;}
+  .err{color:#f87171;font-size:18px;font-weight:bold;}
+  pre{white-space:pre-wrap;word-break:break-all;}
+</style>
+</head>
+<body>
+<h1>Meta OAuth — Debug</h1>
 
-  if (error || !code || !state) {
-    return NextResponse.redirect(new URL("/dashboard?social=error", req.url));
-  }
+${error ? `<div class="box"><p class="err">❌ Facebook meldet Fehler: ${error}</p><p>${params.error_description ?? ""}</p></div>` : ""}
+${hasCode ? `<div class="box"><p class="ok">✅ CODE empfangen — Facebook-Login hat geklappt!</p></div>` : ""}
+${!hasCode && !error ? `<div class="box"><p class="err">❌ Kein Code und kein Fehler — merkwürdig.</p></div>` : ""}
 
-  let kundenprofilId: string;
-  try {
-    const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
-    kundenprofilId = decoded.kundenprofilId;
-    if (!kundenprofilId) throw new Error("missing id");
-  } catch {
-    return NextResponse.redirect(new URL("/dashboard?social=error", req.url));
-  }
+<div class="box">
+  <p><strong>Empfangene Parameter:</strong></p>
+  ${Object.entries(params).map(([k, v]) => `<p><span class="key">${k}</span>: <span class="val">${v}</span></p>`).join("") || "<p>Keine Parameter</p>"}
+</div>
 
-  try {
-    const tokenRes = await fetch("https://graph.facebook.com/v21.0/oauth/access_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: APP_ID,
-        client_secret: APP_SECRET,
-        redirect_uri: REDIRECT_URI,
-        code,
-      }),
-    });
-    const tokenData = await tokenRes.json();
-    console.log("[social/cb] tokenData:", JSON.stringify({ has_token: !!tokenData.access_token, error: tokenData.error }));
+<div class="box">
+  <p><strong>Vollständige URL:</strong></p>
+  <pre class="val">${req.url}</pre>
+</div>
+</body></html>`;
 
-    if (!tokenData.access_token) throw new Error(`No token: ${JSON.stringify(tokenData)}`);
-
-    const longToken = await getLongLivedToken(tokenData.access_token);
-    if (!longToken.access_token) throw new Error(`No long token: ${JSON.stringify(longToken)}`);
-
-    const igAccounts = await getInstagramAccounts(longToken.access_token);
-
-    if (igAccounts.length === 0) {
-      const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-      url.searchParams.set("social", "kein-business-account");
-      url.searchParams.set("tab", "social");
-      return NextResponse.redirect(url);
-    }
-
-    for (const account of igAccounts) {
-      await prisma.socialAccount.upsert({
-        where: { kundenprofilId_plattform_accountId: { kundenprofilId, plattform: "instagram", accountId: account.igAccountId } },
-        update: { accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: new Date(Date.now() + longToken.expires_in * 1000) },
-        create: { id: randomBytes(12).toString("hex"), kundenprofilId, plattform: "instagram", accountId: account.igAccountId, accountName: account.igAccountName, accountHandle: account.igUsername, accessToken: longToken.access_token, pageId: account.pageId, pageToken: account.pageToken, tokenExpiry: new Date(Date.now() + longToken.expires_in * 1000) },
-      });
-    }
-
-    const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-    url.searchParams.set("social", "success");
-    url.searchParams.set("tab", "social");
-    return NextResponse.redirect(url);
-  } catch (err) {
-    console.error("[social/cb] error:", String(err));
-    const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-    url.searchParams.set("social", "error");
-    url.searchParams.set("tab", "social");
-    return NextResponse.redirect(url);
-  }
+  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
