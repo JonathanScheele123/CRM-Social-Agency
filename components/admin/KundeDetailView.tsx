@@ -75,7 +75,7 @@ type KundeDetailProps = {
   alleKunden: AllesKundenprofil[];
 };
 
-const VALID_TABS = ["kalender", "ideen", "planen", "kpis", "daten", "archiv", "drive", "social", "einstellungen"];
+const VALID_TABS = ["kalender", "ideen", "planen", "kpis", "daten", "archiv", "drive", "einstellungen"];
 
 
 function AdminContentWrapper({
@@ -177,7 +177,6 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
     { id: "daten", label: t.kundeDetailView.kundendaten },
     { id: "archiv", label: t.kundeDetailView.archiv },
     { id: "drive", label: t.kundeDetailView.googleWorkspace },
-    { id: "social", label: "Social Media" },
     { id: "einstellungen", label: t.kundeDetailView.einstellungen },
   ];
 
@@ -292,7 +291,6 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
         {aktuellerTab === "planen" && <PullToRefresh><ContentPlanenTab ideen={sharedIdeen} kundenprofilId={kunde.id} cloudLink={kunde.cloudLink} onIdeaAktiviert={ideaEntfernen} drehtag={(kunde as any).drehtag ?? null} drehtageAdresse={(kunde as any).drehtageAdresse ?? null} drehtageStatus={(kunde as any).drehtageStatus ?? null} /></PullToRefresh>}
         {aktuellerTab === "archiv" && <PullToRefresh><AdminArchivTab eintraege={kunde.archivEintraege} kundenprofilId={kunde.id} /></PullToRefresh>}
         {aktuellerTab === "drive" && <DrivePostfachBereich cloudLink={kunde.cloudLink} kundenprofilId={kunde.id} />}
-        {aktuellerTab === "social" && <PullToRefresh><SocialAccountsTab kundenprofilId={kunde.id} /></PullToRefresh>}
         {aktuellerTab === "einstellungen" && (
           <EinstellungenTab kunde={kunde} alleKunden={alleKunden} />
         )}
@@ -1048,11 +1046,9 @@ function EinstellungenTab({
     });
   }
 
-  const bekannteEmails = [
-    kunde.emailAnsprechpartner ? { email: kunde.emailAnsprechpartner, label: kunde.ansprechpartner || kunde.emailAnsprechpartner } : null,
-    kunde.emailFreigabeVerantwortlicher ? { email: kunde.emailFreigabeVerantwortlicher, label: kunde.freigabeVerantwortlicher || kunde.emailFreigabeVerantwortlicher } : null,
-    kunde.emailFreigabeVerantwortlicher2 ? { email: kunde.emailFreigabeVerantwortlicher2, label: kunde.freigabeVerantwortlicher2 || kunde.emailFreigabeVerantwortlicher2 } : null,
-  ].filter((e): e is { email: string; label: string } => e !== null);
+  const bekannteEmails = kunde.zugriffe
+    .filter((z) => z.user.aktiv)
+    .map((z) => ({ email: z.user.email, label: z.user.name || z.user.email }));
 
   return (
     <div className="max-w-2xl space-y-4">
