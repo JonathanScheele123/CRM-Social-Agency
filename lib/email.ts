@@ -27,12 +27,14 @@ export async function sendEmail({
   text,
   html,
   replyTo,
+  attachments,
 }: {
   to: string | string[];
   subject: string;
   text: string;
   html?: string;
   replyTo?: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
 }) {
   const address = process.env.GMAIL_FROM ?? process.env.SMTP_FROM ?? process.env.SMTP_USER;
   if (!address) throw new Error("Kein E-Mail-Absender konfiguriert.");
@@ -41,5 +43,5 @@ export async function sendEmail({
   const resolvedHtml = html ? absoluteImages(html) : html;
 
   const transporter = createTransporter();
-  await transporter.sendMail({ from, to, subject, text, html: resolvedHtml, replyTo });
+  await transporter.sendMail({ from, to, subject, text, html: resolvedHtml, replyTo, attachments });
 }

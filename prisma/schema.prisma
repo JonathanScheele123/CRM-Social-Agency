@@ -158,6 +158,7 @@ model Kundenprofil {
   welcheBereicheNichtZeigen          String?
 
   // Drehtag
+  modul                  String?
   drehtageAnWelchenTagen String[]
   drehtageUhrzeiten      String?
   ansprechpartnerDrehtag String?

@@ -22,20 +22,21 @@ export async function GET(
 
   const now = icsDate(new Date());
 
+  const crmBase = (process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de").replace(/\/$/, "");
+
   const events = eintraege
     .filter(e => e.geplantAm)
     .map(e => {
       const start = e.geplantAm!;
-      const end = new Date(start.getTime() + 60 * 60 * 1000); // +1h
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
       const titel = e.titel ?? e.contentTyp ?? "Content-Beitrag";
-      const plattformen = e.plattform?.join(", ") ?? "";
-      const beschreibung = [
-        plattformen && `Plattform: ${plattformen}`,
-        e.contentTyp && `Typ: ${e.contentTyp}`,
-        e.beschreibung,
-      ]
-        .filter(Boolean)
-        .join("\\n");
+
+      const zeilen: string[] = [];
+      if (e.dateizugriff) zeilen.push(`Drive: ${e.dateizugriff}`);
+      if (e.captionText)  zeilen.push(``, `Caption:`, e.captionText);
+      zeilen.push(``, `---`, `CRM: ${crmBase}/dashboard`);
+
+      const beschreibung = zeilen.map(escapeIcs).join("\\n");
 
       return [
         "BEGIN:VEVENT",
@@ -44,7 +45,8 @@ export async function GET(
         `DTSTART:${icsDate(start)}`,
         `DTEND:${icsDate(end)}`,
         `SUMMARY:${escapeIcs(titel)}`,
-        beschreibung && `DESCRIPTION:${beschreibung}`,
+        `DESCRIPTION:${beschreibung}`,
+        e.dateizugriff ? `URL:${e.dateizugriff}` : null,
         "END:VEVENT",
       ]
         .filter(Boolean)

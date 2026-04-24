@@ -879,10 +879,13 @@ function BenutzerSchnellForm({
       }),
     });
     setLaden(false);
+    const d = await res.json();
     if (!res.ok) {
-      const d = await res.json();
       setFehler(d.fehler ?? t.common.fehlerAufgetreten);
       return;
+    }
+    if (d.emailFehler) {
+      setFehler(`Benutzer angelegt, aber E-Mail fehlgeschlagen: ${d.emailFehler}`);
     }
     setForm({ name: "", email: "" });
     setOffen(false);

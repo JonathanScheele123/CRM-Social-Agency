@@ -14,8 +14,8 @@ function generateHtml(name: string, total: number, typen: { name: string; count:
     .map(
       (t) => `
       <tr>
-        <td style="padding:5px 32px 5px 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:13px;color:#4b5468;text-align:left;white-space:nowrap;">${t.name}</td>
-        <td style="padding:5px 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#111111;text-align:right;white-space:nowrap;">${t.count}</td>
+        <td style="padding:5px 20px 5px 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:13px;color:#4a4540;text-align:left;white-space:nowrap;">${t.name}</td>
+        <td style="padding:5px 0;font-family:'EB Garamond',Georgia,serif;font-size:15px;font-weight:500;color:#c8863c;text-align:right;white-space:nowrap;">${t.count}</td>
       </tr>`
     )
     .join("");
@@ -23,202 +23,149 @@ function generateHtml(name: string, total: number, typen: { name: string; count:
   return `<!DOCTYPE html>
 <html lang="de" xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>JS Media</title>
-  <style type="text/css">
-    @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap');
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased; }
-    a { text-decoration: none; }
-    img { border: 0; outline: none; }
-    @media only screen and (max-width: 640px) {
-      .ec { padding-left: 24px !important; padding-right: 24px !important; }
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<title>JS Media</title>
+<style type="text/css">
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;}
+body{margin:0;padding:0;background-color:#f3f1ed;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;}
+img{border:0;outline:none;}
+@media only screen and (max-width:600px){
+  .ec{padding-left:20px!important;padding-right:20px!important;}
+  .hdr-right{display:none!important;font-size:0!important;max-height:0!important;overflow:hidden!important;}
+}
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:#ffffff;">
+<body style="margin:0;padding:0;background-color:#f3f1ed;">
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f3f1ed;">Ihre Content-Ideen sind bereit zur Freigabe – bitte prüfen und freigeben bis zum ${frist}.</div>
 
-  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#ffffff;">
-    Ihre Content-Ideen sind bereit zur Freigabe – bitte prüfen und freigeben bis zum ${frist}.
-  </div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background:#f3f1ed;">
+<tr><td align="center" style="padding:40px 16px;">
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-    style="margin:0;padding:0;background:#ffffff;background-image:radial-gradient(ellipse at 14% 6%, rgba(41,42,145,0.09) 0%, rgba(41,42,145,0) 52%), radial-gradient(ellipse at 86% 96%, rgba(41,42,145,0.07) 0%, rgba(41,42,145,0) 54%), radial-gradient(ellipse at 88% 8%, rgba(236,72,153,0.06) 0%, rgba(236,72,153,0) 44%);">
-    <tr>
-      <td align="center" style="padding:56px 16px 56px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
-          style="width:600px;max-width:600px;margin:0 auto;background:transparent;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#ffffff;border:1px solid #e8e4dc;">
 
-          <!-- Logo -->
-          <tr>
-            <td align="center" class="ec" style="padding:0 48px;">
-              <a href="https://crm.jonathanscheele.de/dashboard" style="display:inline-block;">
-                <img src="https://crm.jonathanscheele.de/logo.png" alt="JS Media" width="64" height="64"
-                  style="display:block;width:64px;height:64px;border-radius:14px;border:0;" />
-              </a>
-            </td>
-          </tr>
+<tr><td style="background:#c8863c;height:3px;line-height:3px;font-size:0;">&nbsp;</td></tr>
 
-          <!-- Headline -->
-          <tr>
-            <td align="center" class="ec" style="padding:28px 48px 0 48px;">
-              <p style="margin:0;font-family:'EB Garamond',Georgia,'Times New Roman',serif;font-weight:500;font-size:34px;line-height:1.15;color:#111111;letter-spacing:-0.01em;text-align:center;">
-                Ihre Content&#8209;Ideen sind<br/>
-                <em style="font-style:italic;font-weight:400;color:#2a2a2a;">bereit zur Bewertung.</em>
-              </p>
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:24px 36px 20px 36px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle" style="padding-right:12px;">
+<img src="https://crm.jonathanscheele.de/logo.png" alt="JS Media" width="36" height="36" style="display:block;width:36px;height:36px;border-radius:8px;"/>
+</td>
+<td valign="middle">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#1a1818;line-height:1.3;">JS Media</p>
+<p style="margin:2px 0 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;color:#8a8580;line-height:1.5;">Jonathan Scheele<br/>Enderstra&#223;e 94 &middot; 01277 Dresden</p>
+</td>
+</tr></table>
+</td>
+<td valign="middle" align="right" class="hdr-right">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:10.5px;color:#8a8580;line-height:1.9;text-align:right;">
+<a href="https://www.js-media.de" style="color:#c8863c;text-decoration:none;">www.js-media.de</a><br/>
+<a href="mailto:kontakt@jonathanscheele.de" style="color:#8a8580;text-decoration:none;">kontakt@jonathanscheele.de</a><br/>
+<a href="tel:+491718468848" style="color:#8a8580;text-decoration:none;">+49 171 8468848</a>
+</p>
+</td>
+</tr></table>
+</td></tr>
 
-          <!-- Ornament -->
-          <tr>
-            <td align="center" class="ec" style="padding:22px 48px 0 48px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="width:24px;border-top:1px solid #c8c4bc;line-height:0;font-size:0;">&nbsp;</td>
-                  <td style="padding:0 10px;font-family:'EB Garamond',Georgia,serif;font-size:13px;color:#6b6b6b;line-height:1;">✦</td>
-                  <td style="width:24px;border-top:1px solid #c8c4bc;line-height:0;font-size:0;">&nbsp;</td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+<tr><td style="background:#e8e4dc;height:1px;line-height:1px;font-size:0;">&nbsp;</td></tr>
 
-          <!-- Greeting -->
-          <tr>
-            <td align="center" class="ec" style="padding:22px 72px 0 72px;">
-              <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#4b5468;text-align:center;">
-                Hallo ${name},
-              </p>
-            </td>
-          </tr>
+<tr><td align="center" style="padding:32px 48px 0 48px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:0.20em;text-transform:uppercase;color:#c8863c;line-height:1;">Content&#8209;Ideen &middot; Freigabe</p>
+</td></tr>
 
-          <!-- Body -->
-          <tr>
-            <td class="ec" style="padding:16px 72px 0 72px;">
-              <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#2a2a2a;text-align:center;">
-                wir haben neue Content-Ideen für Ihren Account vorbereitet. Bitte prüfen Sie die Vorschläge und geben Sie diese frei — damit wir die Produktion rechtzeitig starten können.
-              </p>
-            </td>
-          </tr>
+<tr><td align="center" class="ec" style="padding:12px 48px 0 48px;">
+<p style="margin:0;font-family:'EB Garamond',Georgia,'Times New Roman',serif;font-weight:500;font-size:34px;line-height:1.15;color:#1a1818;letter-spacing:-0.01em;text-align:center;">
+Ihre Content&#8209;Ideen sind<br/><em style="font-style:italic;font-weight:400;">bereit zur Bewertung.</em>
+</p>
+</td></tr>
 
-          <!-- Stats box -->
-          <tr>
-            <td align="center" class="ec" style="padding:36px 48px 0 48px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                style="border-top:1px solid #e6e3dd;border-bottom:1px solid #e6e3dd;">
-                <tr>
-                  <td align="center" style="padding:26px 4px 26px 4px;">
-                    <p style="margin:0 0 18px;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:10.5px;letter-spacing:0.20em;text-transform:uppercase;color:#8a8680;line-height:1;text-align:center;">
-                      Ihre Vorschläge im Überblick
-                    </p>
-                    <p style="margin:0 0 4px;font-family:'EB Garamond',Georgia,serif;font-weight:500;font-size:48px;line-height:1;color:#111111;text-align:center;">
-                      ${total}
-                    </p>
-                    <p style="margin:0 0 20px;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:16px;color:#7a766f;text-align:center;">
-                      Ideen zur Freigabe
-                    </p>
-                    <table role="presentation" width="80%" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px auto;">
-                      <tr><td style="border-top:1px solid #e6e3dd;line-height:0;font-size:0;">&nbsp;</td></tr>
-                    </table>
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
-                      ${typeRows}
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+<tr><td align="center" style="padding:16px 0 0 0;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="width:48px;border-top:2px solid #c8863c;line-height:0;font-size:0;">&nbsp;</td>
+</tr></table>
+</td></tr>
 
-          <!-- Deadline -->
-          <tr>
-            <td class="ec" style="padding:28px 72px 0 72px;">
-              <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.75;color:#2a2a2a;text-align:center;">
-                Bitte geben Sie die Ideen bis zum
-                <strong style="color:#111111;">${frist}</strong>
-                frei.
-              </p>
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:28px 48px 0 48px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#4a4540;">Hallo ${name},</p>
+</td></tr>
+<tr><td class="ec" style="padding:14px 48px 0 48px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#4a4540;">
+wir haben neue Content-Ideen für Ihren Account vorbereitet. Bitte prüfen Sie die Vorschläge und geben Sie diese frei — damit wir die Produktion rechtzeitig starten können.
+</p>
+</td></tr>
 
-          <!-- CTA Button -->
-          <tr>
-            <td align="center" class="ec" style="padding:36px 48px 0 48px;">
-              <!--[if mso]>
-              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${dashboardLink}" style="height:52px;v-text-anchor:middle;width:240px;" arcsize="50%" stroke="f" fillcolor="#292a91">
-                <w:anchorlock/><center style="color:#fff;font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;">Ideen freigeben →</center>
-              </v:roundrect><![endif]-->
-              <!--[if !mso]><!-->
-              <a href="${dashboardLink}"
-                style="display:inline-block;padding:16px 38px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.20em;text-transform:uppercase;color:#111111;text-decoration:none;background-color:rgba(255,255,255,0.30);background-image:linear-gradient(180deg,rgba(255,255,255,0.60) 0%,rgba(255,255,255,0.20) 38%,rgba(255,255,255,0.08) 62%,rgba(255,255,255,0.35) 100%);border-radius:999px;box-shadow:0 1px 0 rgba(255,255,255,0.9) inset,0 -1px 0 rgba(255,255,255,0.35) inset,0 0 0 1px rgba(255,255,255,0.55) inset,0 0 0 1px rgba(17,17,17,0.06),0 8px 24px rgba(17,17,17,0.08),0 2px 6px rgba(17,17,17,0.04),-10px -6px 28px rgba(41,42,145,0.18),10px 6px 28px rgba(41,42,145,0.13);backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);">
-                Ideen freigeben&nbsp;&nbsp;→
-              </a>
-              <!--<![endif]-->
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:28px 48px 0 48px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e8e4dc;background:#faf9f7;">
+<tr><td align="center" style="padding:28px 24px;">
+<p style="margin:0 0 4px;font-family:'EB Garamond',Georgia,serif;font-size:52px;font-weight:500;color:#c8863c;line-height:1;">${total}</p>
+<p style="margin:0 0 20px;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:16px;color:#8a8580;line-height:1.3;">Ideen zur Freigabe</p>
+<table role="presentation" width="60%" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px auto;">
+<tr><td style="border-top:1px solid #e8e4dc;line-height:0;font-size:0;">&nbsp;</td></tr>
+</table>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+${typeRows}
+</table>
+</td></tr>
+</table>
+</td></tr>
 
-          <!-- Divider -->
-          <tr>
-            <td class="ec" style="padding:40px 48px 0 48px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr><td style="border-top:1px solid #e6e3dd;line-height:0;font-size:0;">&nbsp;</td></tr>
-              </table>
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:24px 48px 0 48px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-left:3px solid #c8863c;background:#faf9f7;">
+<tr><td style="padding:14px 18px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.75;color:#4a4540;">
+Bitte geben Sie die Ideen bis zum <strong style="color:#1a1818;">${frist}</strong> frei.
+</p>
+</td></tr>
+</table>
+</td></tr>
 
-          <!-- Sign-off -->
-          <tr>
-            <td class="ec" style="padding:28px 72px 0 72px;">
-              <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#2a2a2a;text-align:center;">
-                Bei Fragen stehen wir jederzeit zur Verfügung —<br/>antworten Sie einfach auf diese E-Mail.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" class="ec" style="padding:10px 48px 0 48px;">
-              <p style="margin:0;font-family:'EB Garamond',Georgia,'Times New Roman',serif;font-style:italic;font-size:19px;color:#111111;text-align:center;line-height:1.3;">
-                Jonathan Scheele
-              </p>
-              <p style="margin:5px 0 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;color:#7a766f;text-align:center;letter-spacing:0.18em;text-transform:uppercase;line-height:1;">
-                JS Media
-              </p>
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:28px 48px 0 48px;">
+<!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${dashboardLink}" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="4%" stroke="f" fillcolor="#c8863c">
+<w:anchorlock/><center style="color:#ffffff;font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;">Ideen freigeben &rarr;</center>
+</v:roundrect><![endif]-->
+<!--[if !mso]><!-->
+<a href="${dashboardLink}" style="display:inline-block;padding:14px 32px;background:#c8863c;color:#ffffff;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;border-radius:3px;">
+Ideen freigeben &rarr;
+</a>
+<!--<![endif]-->
+</td></tr>
 
-          <!-- Footer separator -->
-          <tr>
-            <td class="ec" style="padding:36px 48px 0 48px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr><td style="border-top:1px solid #e6e3dd;line-height:0;font-size:0;">&nbsp;</td></tr>
-              </table>
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:36px 48px 0 48px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:#4a4540;">
+Bei Fragen stehen wir jederzeit zur Verfügung — antworten Sie einfach auf diese E-Mail.
+</p>
+</td></tr>
 
-          <!-- Footer -->
-          <tr>
-            <td align="center" class="ec" style="padding:20px 48px 0 48px;">
-              <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.9;color:#8a8680;letter-spacing:0.06em;text-align:center;">
-                JS&nbsp;Media · Jonathan Scheele<br />
-                Enderstraße 94 · 01277 Dresden<br />
-                <a href="tel:+4901718468848" style="color:#8a8680;text-decoration:none;">0171 846 88 48</a>
-                &nbsp;·&nbsp;
-                <a href="mailto:kontakt@jonathanscheele.de" style="color:#8a8680;text-decoration:none;">kontakt@jonathanscheele.de</a><br />
-                <a href="https://www.js-media.de" style="color:#292a91;text-decoration:none;font-weight:500;">www.js-media.de</a>
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td align="center" class="ec" style="padding:10px 48px 48px 48px;">
-              <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:10.5px;color:#b0b7c4;letter-spacing:0.04em;text-align:center;line-height:1.7;">
-                Sie erhalten diese Nachricht, weil Sie als Freigabe-Verantwortlicher hinterlegt sind.
-              </p>
-            </td>
-          </tr>
+<tr><td class="ec" style="padding:40px 48px 0 48px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.75;color:#4a4540;">Mit freundlichen Gr&#252;&#223;en,</p>
+<p style="margin:20px 0 0;font-family:'EB Garamond',Georgia,'Times New Roman',serif;font-style:italic;font-size:19px;color:#1a1818;line-height:1.3;">Jonathan Scheele</p>
+<p style="margin:4px 0 0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;color:#8a8580;letter-spacing:0.14em;text-transform:uppercase;">JS Media</p>
+</td></tr>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+<tr><td class="ec" style="padding:32px 36px 0 36px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="border-top:1px solid #e8e4dc;line-height:0;font-size:0;">&nbsp;</td></tr>
+</table>
+</td></tr>
+
+<tr><td align="center" class="ec" style="padding:18px 36px 28px 36px;">
+<p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:10.5px;line-height:1.9;color:#a09890;text-align:center;">
+JS&nbsp;Media &middot; Jonathan Scheele &middot; Enderstra&#223;e 94 &middot; 01277 Dresden<br/>
+<a href="tel:+491718468848" style="color:#a09890;text-decoration:none;">0171 846 88 48</a>&nbsp;&middot;&nbsp;<a href="mailto:kontakt@jonathanscheele.de" style="color:#a09890;text-decoration:none;">kontakt@jonathanscheele.de</a>&nbsp;&middot;&nbsp;<a href="https://www.js-media.de" style="color:#c8863c;text-decoration:none;">www.js-media.de</a><br/>
+USt-IdNr. gem. &sect; 27a UStG: DE409311042<br/>
+<span style="font-size:10px;color:#c0bbb5;letter-spacing:0.04em;">Sie erhalten diese Nachricht, weil Sie als Freigabe-Verantwortlicher hinterlegt sind.</span>
+</p>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>`;
 }
@@ -238,13 +185,11 @@ export async function POST(
     kunde = await prisma.kundenprofil.findUnique({
       where: { id },
       select: {
-        ansprechpartner: true,
-        emailAnsprechpartner: true,
-        freigabeVerantwortlicher: true,
-        emailFreigabeVerantwortlicher: true,
-        freigabeVerantwortlicher2: true,
-        emailFreigabeVerantwortlicher2: true,
         contentIdeen_: { select: { contentTyp: true } },
+        zugriffe: {
+          where: { user: { aktiv: true } },
+          select: { user: { select: { name: true, email: true } } },
+        },
       },
     });
   } catch (e) {
@@ -254,13 +199,9 @@ export async function POST(
 
   if (!kunde) return Response.json({ fehler: "Kunde nicht gefunden." }, { status: 404 });
 
-  const empfaenger: { name: string; email: string }[] = [
-    { name: kunde.ansprechpartner, email: kunde.emailAnsprechpartner },
-    { name: kunde.freigabeVerantwortlicher, email: kunde.emailFreigabeVerantwortlicher },
-    { name: kunde.freigabeVerantwortlicher2, email: kunde.emailFreigabeVerantwortlicher2 },
-  ].filter((e): e is { name: string; email: string } =>
-    typeof e.email === "string" && e.email.trim().length > 0
-  );
+  const empfaenger = kunde.zugriffe
+    .map((z) => ({ name: z.user.name ?? "", email: z.user.email }))
+    .filter((e) => e.email.trim().length > 0);
 
   if (empfaenger.length === 0)
     return Response.json({ fehler: "Keine E-Mail-Adressen hinterlegt." }, { status: 400 });
@@ -280,13 +221,13 @@ export async function POST(
 
   const fehler: string[] = [];
   for (const emp of empfaenger) {
-    const name = emp.name?.trim() || emp.email;
+    const name = emp.name?.trim() || "Guten Tag";
     const html = generateHtml(name, total, typen, frist, dashboardLink);
     try {
       await sendEmail({
         to: emp.email,
         subject: "Ihre Content-Ideen sind bereit zur Bewertung · JS Media",
-        text: `Hallo ${name},\n\nIhre Content-Ideen sind bereit zur Bewertung. Bitte melden Sie sich an und geben Sie die ${total} Vorschläge bis zum ${frist} frei.\n\n${dashboardLink}\n\nBei Fragen antworten Sie einfach auf diese E-Mail.\n\nJonathan Scheele · JS Media`,
+        text: `${name},\n\nIhre Content-Ideen sind bereit zur Bewertung. Bitte melden Sie sich an und geben Sie die ${total} Vorschläge bis zum ${frist} frei.\n\n${dashboardLink}\n\nBei Fragen antworten Sie einfach auf diese E-Mail.\n\nJonathan Scheele · JS Media`,
         html,
       });
     } catch (e) {

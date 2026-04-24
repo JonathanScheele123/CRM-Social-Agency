@@ -8,7 +8,7 @@ const STRING_FELDER = [
   "statusKunde", "kundenKategorie", "kundenzufriedenheit", "archiv", "kundenfeedback",
   "notizenIntern", "contentIdeen", "postingKalender", "mitarbeiterImBildRechtlichGeklaert",
   "mitarbeiterImBildRechtlichGeregelt", "mitarbeiterNichtZeigen", "welcheMitarbeiterNichtZeigen",
-  "sensibleBereiche", "welcheBereicheNichtZeigen", "drehtageUhrzeiten", "ansprechpartnerDrehtag",
+  "sensibleBereiche", "welcheBereicheNichtZeigen", "modul", "drehtageUhrzeiten", "ansprechpartnerDrehtag",
   "einschraenkungenVorOrt", "selbstAuftreten", "kurzbeschreibung", "kernwerte",
   "alleinstellungsmerkmale", "haeufigsteProbleme", "haeufigsteEinwaende", "zielgruppeOnline",
   "wasKundenLieben", "zielgruppe", "hauptziel", "heroProdukte", "wiederkehrendeProdukte",

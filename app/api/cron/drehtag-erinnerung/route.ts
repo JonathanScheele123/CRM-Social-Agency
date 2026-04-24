@@ -2,6 +2,18 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de";
+
+async function ladeAblaufplanPdf(): Promise<Buffer | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/ablaufplan-drehtag.pdf`);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 function drehtageErinnerungHtml(opts: {
   name: string;
   typ: "erinnerung-tag" | "erinnerung-stunde";
@@ -24,7 +36,7 @@ function drehtageErinnerungHtml(opts: {
         style="background:#fff3f3;border:1px solid #f5c6c6;border-radius:4px;">
         <tr><td style="padding:14px 20px;">
           <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#e05252;line-height:1;margin-bottom:4px;">Bald geht es los</p>
-          <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#7a1a1a;font-weight:500;">In ca. einer Stunde startet Ihr Drehtag. Wir sind auf dem Weg — bis gleich!</p>
+          <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#7a1a1a;font-weight:500;">In ca. einer Stunde startet Ihr Drehtag. Bis gleich!</p>
         </td></tr>
       </table>`;
 
@@ -33,10 +45,10 @@ function drehtageErinnerungHtml(opts: {
     : `In einer Stunde<br/><em style="font-style:italic;font-weight:400;color:#2a2a2a;">geht es los.</em>`;
 
   const body = istTag
-    ? `morgen ist es soweit — unser gemeinsamer Drehtag steht an. Nachfolgend noch einmal alle Details auf einen Blick.`
-    : `in ungefähr einer Stunde starten wir mit Ihrem Drehtag. Wir sind bereits unterwegs.`;
+    ? `morgen ist es soweit — Ihr Drehtag steht an. Nachfolgend noch einmal alle Details auf einen Blick.`
+    : `in ungefähr einer Stunde startet Ihr Drehtag. Hier noch einmal alle Informationen im Überblick.`;
 
-  const signoff = istTag ? "Bis morgen — ich freue mich auf den Tag." : "Bis gleich — wir freuen uns!";
+  const signoff = istTag ? "Bis morgen!" : "Bis gleich!";
   const preheader = istTag
     ? "Morgen ist Ihr Drehtag – letzte Vorbereitungen."
     : "In 1 Stunde beginnt Ihr Drehtag.";
@@ -159,6 +171,7 @@ export async function GET(req: NextRequest) {
     },
     select: {
       id: true,
+      unternehmensname: true,
       drehtag: true,
       drehtageAdresse: true,
       drehtageErinnerungTagGesendet: true,
@@ -175,12 +188,14 @@ export async function GET(req: NextRequest) {
     if (!k.drehtag) continue;
     const dt = new Date(k.drehtag);
     const empfaenger = k.zugriffe
-      .filter((z) => z.user.aktiv && z.user.email)
-      .map((z) => ({ name: z.user.name ?? z.user.email, email: z.user.email }));
+      .filter((z: { user: { aktiv: boolean; email: string; name: string | null } }) => z.user.aktiv && z.user.email)
+      .map((z: { user: { aktiv: boolean; email: string; name: string | null } }) => ({ name: z.user.name ?? z.user.email, email: z.user.email }));
 
     const datum = dt.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
     const uhrzeit = dt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
     const adresse = k.drehtageAdresse ?? "–";
+    const pdfRaw = await ladeAblaufplanPdf();
+    const pdfAnhang = pdfRaw ? [{ filename: "Ablaufplan Drehtag.pdf", content: pdfRaw, contentType: "application/pdf" }] : [];
 
     if (!k.drehtageErinnerungTagGesendet && dt >= in23h && dt <= in25h) {
       for (const emp of empfaenger) {
@@ -189,6 +204,7 @@ export async function GET(req: NextRequest) {
           subject: `Drehtag morgen: ${datum} · JS Media`,
           text: `Hallo ${emp.name},\n\nmorgen ist Ihr Drehtag.\n\nDatum: ${datum}\nUhrzeit: ${uhrzeit} Uhr\nTreffpunkt: ${adresse}\n\nJS Media`,
           html: drehtageErinnerungHtml({ name: emp.name, typ: "erinnerung-tag", datum, uhrzeit, adresse }),
+          attachments: pdfAnhang,
         }).catch((e) => console.error(`[drehtag-cron] Tag-Erinnerung ${emp.email}:`, e));
       }
       await prisma.kundenprofil.update({ where: { id: k.id }, data: { drehtageErinnerungTagGesendet: now } });
@@ -200,8 +216,9 @@ export async function GET(req: NextRequest) {
         await sendEmail({
           to: emp.email,
           subject: `In 1 Stunde: Drehtag startet · JS Media`,
-          text: `Hallo ${emp.name},\n\nin ca. einer Stunde startet Ihr Drehtag. Wir sind auf dem Weg!\n\nDatum: ${datum}\nUhrzeit: ${uhrzeit} Uhr\nTreffpunkt: ${adresse}\n\nJS Media`,
+          text: `Hallo ${emp.name},\n\nin ca. einer Stunde startet Ihr Drehtag.\n\nDatum: ${datum}\nUhrzeit: ${uhrzeit} Uhr\nTreffpunkt: ${adresse}\n\nJS Media`,
           html: drehtageErinnerungHtml({ name: emp.name, typ: "erinnerung-stunde", datum, uhrzeit, adresse }),
+          attachments: pdfAnhang,
         }).catch((e) => console.error(`[drehtag-cron] Stunden-Erinnerung ${emp.email}:`, e));
       }
       await prisma.kundenprofil.update({ where: { id: k.id }, data: { drehtageErinnerungStundeGesendet: now } });

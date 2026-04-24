@@ -493,21 +493,11 @@ export default function ContentPlanenTab({
 
   const nochNichtBearbeitet = ideen.filter(i => !istFertig(i));
   const fertigZumPosten = ideen.filter(i => istFertig(i));
-
-  if (ideen.length === 0) {
-    return (
-      <div className="text-center py-16 text-subtle">
-        <p className="text-lg mb-2">Keine angenommenen Ideen</p>
-        <p className="text-sm">Gehe zu Content-Ideen und nehme Ideen an, um sie hier zu planen.</p>
-      </div>
-    );
-  }
-
   const hatAktivenDrehtag = drehtag && drehtageStatus === "geplant";
 
   return (
     <div>
-      {/* Drehtag-Bereich */}
+      {/* Drehtag-Bereich — immer sichtbar */}
       <div className={`flex items-center justify-between gap-4 mb-5 p-4 rounded-2xl border ${hatAktivenDrehtag ? "bg-accent/5 border-accent/20" : "bg-elevated border-divider"}`}>
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${hatAktivenDrehtag ? "bg-accent/15" : "bg-divider"}`}>
@@ -549,6 +539,13 @@ export default function ContentPlanenTab({
         />
       )}
 
+      {ideen.length === 0 ? (
+        <div className="text-center py-12 text-subtle border border-dashed border-divider rounded-2xl">
+          <p className="text-base mb-1 font-medium">Keine angenommenen Ideen</p>
+          <p className="text-sm">Gehe zu Content-Ideen und nehme Ideen an, um sie hier zu planen.</p>
+        </div>
+      ) : (
+      <>
       <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
           <h2 className="font-semibold text-lg text-fg">Content planen</h2>
@@ -607,6 +604,8 @@ export default function ContentPlanenTab({
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

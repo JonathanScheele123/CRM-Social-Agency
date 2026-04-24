@@ -125,9 +125,10 @@ export default function ContentStrategieFormularPage() {
     contentThemenSonstiges: "",
     contentStil: [] as string[],
     contentStilSonstiges: "",
-    // Freigabe & Planung
-    freigabeVerantwortlicher: "",
+    // Planung
     besonderheitenPlanung: "",
+    // Modul
+    modul: "Modul 2 – All-in mit Vor-Ort-Drehtag",
     // Rechtliches
     mitarbeiterImBildRechtlichGeklaert: "",
     mitarbeiterImBildRechtlichGeregelt: "",
@@ -361,14 +362,9 @@ export default function ContentStrategieFormularPage() {
               )}
             </div>
 
-            {/* Freigabe & Planung */}
+            {/* Planung */}
             <div className={sectionClass}>
-              <SectionHeader title="Freigabe & Planung" />
-              <div>
-                <label className={labelClass}>Wer gibt Inhalte frei? (Name / E-Mail / Telefon)</label>
-                <input type="text" value={form.freigabeVerantwortlicher} onChange={e => set("freigabeVerantwortlicher", e.target.value)}
-                  placeholder="Max Mustermann / max@firma.de / +49 123 456" className={inputClass} />
-              </div>
+              <SectionHeader title="Planung" />
               <div>
                 <label className={labelClass}>Gibt es Besonderheiten bei der Planung?</label>
                 <textarea value={form.besonderheitenPlanung} onChange={e => set("besonderheitenPlanung", e.target.value)}
@@ -418,33 +414,43 @@ export default function ContentStrategieFormularPage() {
             {/* Drehtag */}
             <div className={sectionClass}>
               <SectionHeader title="Drehtag" />
-              <MultiSelect
-                label="An welchen Tagen wären Drehtage möglich?"
-                options={["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]}
-                value={form.drehtageAnWelchenTagen}
-                onChange={v => setArr("drehtageAnWelchenTagen", v)}
-              />
-              <div>
-                <label className={labelClass}>Zu welchen Uhrzeiten sind Dreharbeiten möglich?</label>
-                <input type="text" value={form.drehtageUhrzeiten} onChange={e => set("drehtageUhrzeiten", e.target.value)}
-                  placeholder="z. B. 9:00–17:00 Uhr" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Wer ist Ansprechpartner während des Drehtags? (Name / Rolle / Kontakt)</label>
-                <input type="text" value={form.ansprechpartnerDrehtag} onChange={e => set("ansprechpartnerDrehtag", e.target.value)}
-                  placeholder="Max Mustermann / Marketing / +49 123 456" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Gibt es Einschränkungen vor Ort (Lärm, Licht, Zugang etc.)?</label>
-                <textarea value={form.einschraenkungenVorOrt} onChange={e => set("einschraenkungenVorOrt", e.target.value)}
-                  placeholder="Beschreiben Sie besondere Gegebenheiten..." className={textareaClass} />
-              </div>
               <SingleSelect
-                label="Möchten Sie selbst in Reels, Stories oder auf Fotos auftreten?"
-                options={["Ja", "Ich bin mir unsicher", "Nein"]}
-                value={form.selbstAuftreten}
-                onChange={v => set("selbstAuftreten", v)}
+                label="Welches Modul haben Sie gebucht?"
+                options={["Modul 1 – Strategie & Betreuung", "Modul 2 – All-in mit Vor-Ort-Drehtag"]}
+                value={form.modul}
+                onChange={v => set("modul", v)}
               />
+              {form.modul !== "Modul 1 – Strategie & Betreuung" && (
+                <>
+                  <MultiSelect
+                    label="An welchen Tagen wären Drehtage möglich?"
+                    options={["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]}
+                    value={form.drehtageAnWelchenTagen}
+                    onChange={v => setArr("drehtageAnWelchenTagen", v)}
+                  />
+                  <div>
+                    <label className={labelClass}>Zu welchen Uhrzeiten sind Dreharbeiten möglich?</label>
+                    <input type="text" value={form.drehtageUhrzeiten} onChange={e => set("drehtageUhrzeiten", e.target.value)}
+                      placeholder="z. B. 9:00–17:00 Uhr" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Wer ist Ansprechpartner während des Drehtags? (Name / Rolle / Kontakt)</label>
+                    <input type="text" value={form.ansprechpartnerDrehtag} onChange={e => set("ansprechpartnerDrehtag", e.target.value)}
+                      placeholder="Max Mustermann / Marketing / +49 123 456" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Gibt es Einschränkungen vor Ort (Lärm, Licht, Zugang etc.)?</label>
+                    <textarea value={form.einschraenkungenVorOrt} onChange={e => set("einschraenkungenVorOrt", e.target.value)}
+                      placeholder="Beschreiben Sie besondere Gegebenheiten..." className={textareaClass} />
+                  </div>
+                  <SingleSelect
+                    label="Möchten Sie selbst in Reels, Stories oder auf Fotos auftreten?"
+                    options={["Ja", "Ich bin mir unsicher", "Nein"]}
+                    value={form.selbstAuftreten}
+                    onChange={v => set("selbstAuftreten", v)}
+                  />
+                </>
+              )}
             </div>
 
             {fehler && (

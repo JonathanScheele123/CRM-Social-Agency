@@ -59,6 +59,7 @@ export default async function KundeBearbeitenPage({
     welcheMitarbeiterNichtZeigen: kunde.welcheMitarbeiterNichtZeigen ?? "",
     sensibleBereiche: kunde.sensibleBereiche ?? "",
     welcheBereicheNichtZeigen: kunde.welcheBereicheNichtZeigen ?? "",
+    modul: kunde.modul ?? "",
     drehtageAnWelchenTagen: kunde.drehtageAnWelchenTagen ?? [],
     drehtageUhrzeiten: kunde.drehtageUhrzeiten ?? "",
     ansprechpartnerDrehtag: kunde.ansprechpartnerDrehtag ?? "",

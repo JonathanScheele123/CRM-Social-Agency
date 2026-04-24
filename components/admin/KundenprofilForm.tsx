@@ -43,6 +43,7 @@ export type KundenprofilFormDaten = {
   welcheMitarbeiterNichtZeigen: string;
   sensibleBereiche: string;
   welcheBereicheNichtZeigen: string;
+  modul: string;
   drehtageAnWelchenTagen: string[];
   drehtageUhrzeiten: string;
   ansprechpartnerDrehtag: string;
@@ -81,7 +82,7 @@ export const LEERES_FORMULAR: KundenprofilFormDaten = {
   mitarbeiterImBildRechtlichGeklaert: "", mitarbeiterImBildRechtlichGeregelt: "",
   mitarbeiterNichtZeigen: "", welcheMitarbeiterNichtZeigen: "",
   sensibleBereiche: "", welcheBereicheNichtZeigen: "",
-  drehtageAnWelchenTagen: [], drehtageUhrzeiten: "", ansprechpartnerDrehtag: "",
+  modul: "", drehtageAnWelchenTagen: [], drehtageUhrzeiten: "", ansprechpartnerDrehtag: "",
   einschraenkungenVorOrt: "", selbstAuftreten: "", wunschdatum: "",
   kurzbeschreibung: "", kernwerte: "", alleinstellungsmerkmale: "",
   haeufigsteProbleme: "", haeufigsteEinwaende: "", zielgruppeOnline: "",
@@ -491,6 +492,13 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
           {aktuellerTab === "drehtag" && (
             <div>
               <Abschnitt titel="Drehtag-Verfügbarkeit">
+                <Feld label="Gebuchtes Modul">
+                  <select name="modul" value={formDaten.modul} onChange={e => onChange("modul", e.target.value)} className={inputKlasse}>
+                    <option value="">– nicht angegeben –</option>
+                    <option value="Modul 1 – Strategie &amp; Betreuung">Modul 1 – Strategie &amp; Betreuung</option>
+                    <option value="Modul 2 – All-in mit Vor-Ort-Drehtag">Modul 2 – All-in mit Vor-Ort-Drehtag</option>
+                  </select>
+                </Feld>
                 <VollBreit>
                   <Feld label={kpf.drehtageWelcheTage}>
                     <MultiCheckbox name="drehtageAnWelchenTagen" wert={formDaten.drehtageAnWelchenTagen} onChange={onChange}

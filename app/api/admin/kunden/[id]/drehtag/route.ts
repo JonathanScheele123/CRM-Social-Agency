@@ -2,6 +2,18 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 
+const BASE_URL = process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de";
+
+async function ladeAblaufplanPdf(): Promise<Buffer | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/ablaufplan-drehtag.pdf`);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 function drehtageMailHtml(opts: {
   name: string;
   typ: "bestaetigung" | "erinnerung-tag" | "erinnerung-stunde" | "verschoben" | "abgesagt";
@@ -32,8 +44,8 @@ function drehtageMailHtml(opts: {
         </table>
       </td></tr>`,
       headline: "Ihr Drehtag<br/><em style=\"font-style:italic;font-weight:400;color:#2a2a2a;\">ist morgen.</em>",
-      body: `morgen ist es soweit — unser gemeinsamer Drehtag steht an. Nachfolgend noch einmal alle Details auf einen Blick.`,
-      signoff: "Bis morgen — ich freue mich auf den Tag.",
+      body: `morgen ist es soweit — Ihr Drehtag steht an. Nachfolgend noch einmal alle Details auf einen Blick.`,
+      signoff: "Bis morgen!",
     },
     "erinnerung-stunde": {
       preheader: "In 1 Stunde beginnt Ihr Drehtag.",
@@ -42,13 +54,13 @@ function drehtageMailHtml(opts: {
           style="background:#fff3f3;border:1px solid #f5c6c6;border-radius:4px;">
           <tr><td style="padding:14px 20px;">
             <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#e05252;line-height:1;margin-bottom:4px;">Bald geht es los</p>
-            <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#7a1a1a;font-weight:500;">In ca. einer Stunde startet Ihr Drehtag. Wir sind auf dem Weg — bis gleich!</p>
+            <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#7a1a1a;font-weight:500;">In ca. einer Stunde startet Ihr Drehtag. Bis gleich!</p>
           </td></tr>
         </table>
       </td></tr>`,
       headline: "In einer Stunde<br/><em style=\"font-style:italic;font-weight:400;color:#2a2a2a;\">geht es los.</em>",
-      body: `in ungefähr einer Stunde starten wir mit Ihrem Drehtag. Wir sind bereits unterwegs. Hier noch einmal alle Informationen im Überblick.`,
-      signoff: "Bis gleich — wir freuen uns!",
+      body: `in ungefähr einer Stunde startet Ihr Drehtag. Hier noch einmal alle Informationen im Überblick.`,
+      signoff: "Bis gleich!",
     },
     verschoben: {
       preheader: "Ihr Drehtag wurde verschoben – neue Informationen anbei.",
@@ -221,8 +233,8 @@ async function empfaengerLaden(kundenprofilId: string) {
     include: { user: { select: { name: true, email: true, aktiv: true } } },
   });
   return zugriffe
-    .filter((z) => z.user.aktiv && z.user.email)
-    .map((z) => ({ name: z.user.name ?? z.user.email, email: z.user.email }));
+    .filter((z: { user: { aktiv: boolean; email: string; name: string | null } }) => z.user.aktiv && z.user.email)
+    .map((z: { user: { aktiv: boolean; email: string; name: string | null } }) => ({ name: z.user.name ?? z.user.email, email: z.user.email }));
 }
 
 function datumFormatieren(d: Date) {
@@ -277,6 +289,8 @@ export async function POST(
     ? `Drehtag verschoben: ${datumStr} · JS Media`
     : `Drehtag bestätigt: ${datumStr} · JS Media`;
 
+  const pdfBuffer = await ladeAblaufplanPdf();
+
   for (const emp of empfaenger) {
     const html = drehtageMailHtml({ name: emp.name, typ, datum: datumStr, uhrzeit: uhrzeitStr, adresse, dashboardLink: "" });
     await sendEmail({
@@ -284,6 +298,7 @@ export async function POST(
       subject: betreff,
       text: `Hallo ${emp.name},\n\n${istVerschiebung ? "Ihr Drehtag wurde verschoben" : "Ihr Drehtag ist bestätigt"}.\n\nDatum: ${datumStr}\nUhrzeit: ${uhrzeitStr} Uhr\nTreffpunkt: ${adresse}\n\nJS Media`,
       html,
+      attachments: pdfBuffer ? [{ filename: "Ablaufplan Drehtag.pdf", content: pdfBuffer, contentType: "application/pdf" }] : [],
     }).catch((e) => console.error(`[drehtag] E-Mail an ${emp.email} fehlgeschlagen:`, e));
   }
 

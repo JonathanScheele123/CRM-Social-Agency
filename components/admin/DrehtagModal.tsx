@@ -55,6 +55,9 @@ export default function DrehtagModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ datum, uhrzeit, adresse: adresse.trim() }),
       });
+      const contentType = res.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json"))
+        throw new Error(`Serverfehler (${res.status}) — bitte Seite neu laden.`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.fehler ?? "Fehler beim Speichern.");
       setBestaetigt(true);

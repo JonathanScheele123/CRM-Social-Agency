@@ -53,6 +53,7 @@ export async function PATCH(
       welcheMitarbeiterNichtZeigen:   d.welcheMitarbeiterNichtZeigen || null,
       sensibleBereiche:               d.sensibleBereiche || null,
       welcheBereicheNichtZeigen:      d.welcheBereicheNichtZeigen || null,
+      modul:                          d.modul || null,
       drehtageAnWelchenTagen:         Array.isArray(d.drehtageAnWelchenTagen) ? d.drehtageAnWelchenTagen : [],
       drehtageUhrzeiten:              d.drehtageUhrzeiten || null,
       ansprechpartnerDrehtag:         d.ansprechpartnerDrehtag || null,

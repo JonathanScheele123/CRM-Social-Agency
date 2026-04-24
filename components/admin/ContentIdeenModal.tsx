@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ModalPortal from "@/components/ModalPortal";
 
 const PLATTFORMEN = ["Instagram", "Facebook", "TikTok", "YouTube", "Sonstiges"];
+const CONTENT_TYPEN = ["Reel", "Story", "Bild", "Karussell"];
 
 const STATUS_FARBEN: Record<string, string> = {
   Offen:      "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
@@ -87,6 +88,8 @@ export default function ContentIdeenModal({ kundenprofilId, idee, onClose }: Pro
     titel: idee?.titel ?? "",
     beschreibung: idee?.beschreibung ?? "",
     plattform: idee?.plattform ?? [],
+    contentTyp: idee?.contentTyp ?? "Reel",
+    prioritaet: idee?.prioritaet ?? "",
     gewuenschtesPostingDatum: idee?.gewuenschtesPostingDatum
       ? new Date(idee.gewuenschtesPostingDatum).toISOString().split("T")[0]
       : "",
@@ -293,11 +296,41 @@ export default function ContentIdeenModal({ kundenprofilId, idee, onClose }: Pro
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-muted mb-1.5">Content-Typ</label>
+                <select value={form.contentTyp}
+                  onChange={e => setForm(p => ({ ...p, contentTyp: e.target.value }))}
+                  className={inputKlasse}>
+                  <option value="">–</option>
+                  {CONTENT_TYPEN.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-muted mb-1.5">Gewünschtes Datum</label>
+                <input type="date" value={form.gewuenschtesPostingDatum}
+                  onChange={e => setForm(p => ({ ...p, gewuenschtesPostingDatum: e.target.value }))}
+                  className={inputKlasse} />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm text-muted mb-1.5">Gewünschtes Datum</label>
-              <input type="date" value={form.gewuenschtesPostingDatum}
-                onChange={e => setForm(p => ({ ...p, gewuenschtesPostingDatum: e.target.value }))}
-                className={inputKlasse} />
+              <label className="block text-sm text-muted mb-2">Priorität</label>
+              <div className="flex gap-2">
+                {([
+                  { wert: "Hoch",    cls: "bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-300" },
+                  { wert: "Mittel",  cls: "bg-yellow-100 dark:bg-yellow-500/20 border-yellow-300 dark:border-yellow-500/40 text-yellow-700 dark:text-yellow-300" },
+                  { wert: "Niedrig", cls: "bg-gray-100 dark:bg-gray-500/20 border-gray-300 dark:border-gray-500/40 text-gray-600 dark:text-gray-400" },
+                ]).map(({ wert, cls }) => (
+                  <button key={wert} type="button"
+                    onClick={() => setForm(prev => ({ ...prev, prioritaet: prev.prioritaet === wert ? "" : wert }))}
+                    className={`flex-1 text-sm py-2 rounded-xl border transition-colors ${
+                      form.prioritaet === wert ? cls : "bg-elevated border-divider text-muted hover:text-fg"
+                    }`}>
+                    {wert}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {fehler && (
