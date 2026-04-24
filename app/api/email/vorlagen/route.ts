@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
     return Response.json({ fehler: "Nicht autorisiert." }, { status: 401 });
   }
   const { name, beschreibung, betreff, html } = await req.json();
-  if (!name || !betreff || html === undefined) {
-    return Response.json({ fehler: "name, betreff und html sind Pflicht." }, { status: 400 });
+  if (!name || html === undefined) {
+    return Response.json({ fehler: "name und html sind Pflicht." }, { status: 400 });
   }
-  const vorlage = await prisma.emailVorlage.create({ data: { name, beschreibung: beschreibung || null, betreff, html } });
+  const vorlage = await prisma.emailVorlage.create({ data: { name, beschreibung: beschreibung || null, betreff: betreff || "", html } });
   return Response.json({ vorlage }, { status: 201 });
 }

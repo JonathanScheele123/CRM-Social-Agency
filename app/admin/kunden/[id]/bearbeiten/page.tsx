@@ -38,6 +38,7 @@ export default async function KundeBearbeitenPage({
     freigabeVerantwortlicher: kunde.freigabeVerantwortlicher ?? "",
     emailFreigabeVerantwortlicher: kunde.emailFreigabeVerantwortlicher ?? "",
     cloudLink: kunde.cloudLink ?? "",
+    kundeDriveLink: kunde.kundeDriveLink ?? "",
     zusatzlinks: kunde.zusatzlinks ?? "",
     vertragsstart: datumZuString(kunde.vertragsstart),
     statusKunde: kunde.statusKunde ?? "",

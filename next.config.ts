@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  serverExternalPackages: ["prisma-wasm-edge", "@prisma/adapter-neon", "@neondatabase/serverless"],
   outputFileTracingIncludes: {
     "**": ["./node_modules/pg-cloudflare/**/*"],
   },

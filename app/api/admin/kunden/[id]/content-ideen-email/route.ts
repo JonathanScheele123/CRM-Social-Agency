@@ -8,7 +8,7 @@ function fristDatum(): string {
   return d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function generateHtml(name: string, total: number, typen: { name: string; count: number }[], frist: string): string {
+function generateHtml(name: string, total: number, typen: { name: string; count: number }[], frist: string, dashboardLink: string): string {
   const typeRows = typen
     .filter((t) => t.count > 0)
     .map(
@@ -54,8 +54,8 @@ function generateHtml(name: string, total: number, typen: { name: string; count:
           <!-- Logo -->
           <tr>
             <td align="center" class="ec" style="padding:0 48px;">
-              <a href="https://www.js-media.de" style="display:inline-block;">
-                <img src="/logo.png" alt="JS Media" width="64" height="64"
+              <a href="https://crm.jonathanscheele.de/dashboard" style="display:inline-block;">
+                <img src="https://crm.jonathanscheele.de/logo.png" alt="JS Media" width="64" height="64"
                   style="display:block;width:64px;height:64px;border-radius:14px;border:0;" />
               </a>
             </td>
@@ -145,11 +145,11 @@ function generateHtml(name: string, total: number, typen: { name: string; count:
           <tr>
             <td align="center" class="ec" style="padding:36px 48px 0 48px;">
               <!--[if mso]>
-              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://app.js-media.de/login?callbackUrl=%2Fdashboard%23content" style="height:52px;v-text-anchor:middle;width:240px;" arcsize="50%" stroke="f" fillcolor="#292a91">
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${dashboardLink}" style="height:52px;v-text-anchor:middle;width:240px;" arcsize="50%" stroke="f" fillcolor="#292a91">
                 <w:anchorlock/><center style="color:#fff;font-family:Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;">Ideen freigeben →</center>
               </v:roundrect><![endif]-->
               <!--[if !mso]><!-->
-              <a href="https://app.js-media.de/login?callbackUrl=%2Fdashboard%23content"
+              <a href="${dashboardLink}"
                 style="display:inline-block;padding:16px 38px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.20em;text-transform:uppercase;color:#111111;text-decoration:none;background-color:rgba(255,255,255,0.30);background-image:linear-gradient(180deg,rgba(255,255,255,0.60) 0%,rgba(255,255,255,0.20) 38%,rgba(255,255,255,0.08) 62%,rgba(255,255,255,0.35) 100%);border-radius:999px;box-shadow:0 1px 0 rgba(255,255,255,0.9) inset,0 -1px 0 rgba(255,255,255,0.35) inset,0 0 0 1px rgba(255,255,255,0.55) inset,0 0 0 1px rgba(17,17,17,0.06),0 8px 24px rgba(17,17,17,0.08),0 2px 6px rgba(17,17,17,0.04),-10px -6px 28px rgba(41,42,145,0.18),10px 6px 28px rgba(41,42,145,0.13);backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);">
                 Ideen freigeben&nbsp;&nbsp;→
               </a>
@@ -276,16 +276,17 @@ export async function POST(
     .sort((a, b) => b.count - a.count);
   const total = kunde.contentIdeen_.length;
   const frist = fristDatum();
+  const dashboardLink = `${(process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de").replace(/\/$/, "")}/dashboard`;
 
   const fehler: string[] = [];
   for (const emp of empfaenger) {
     const name = emp.name?.trim() || emp.email;
-    const html = generateHtml(name, total, typen, frist);
+    const html = generateHtml(name, total, typen, frist, dashboardLink);
     try {
       await sendEmail({
         to: emp.email,
         subject: "Ihre Content-Ideen sind bereit zur Bewertung · JS Media",
-        text: `Hallo ${name},\n\nIhre Content-Ideen sind bereit zur Bewertung. Bitte melden Sie sich an und geben Sie die ${total} Vorschläge bis zum ${frist} frei.\n\nhttps://app.js-media.de/login?callbackUrl=%2Fdashboard%23content\n\nBei Fragen antworten Sie einfach auf diese E-Mail.\n\nJonathan Scheele · JS Media`,
+        text: `Hallo ${name},\n\nIhre Content-Ideen sind bereit zur Bewertung. Bitte melden Sie sich an und geben Sie die ${total} Vorschläge bis zum ${frist} frei.\n\n${dashboardLink}\n\nBei Fragen antworten Sie einfach auf diese E-Mail.\n\nJonathan Scheele · JS Media`,
         html,
       });
     } catch (e) {

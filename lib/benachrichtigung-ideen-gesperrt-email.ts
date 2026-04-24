@@ -1,0 +1,173 @@
+export function benachrichtigungIdeenGesperrtHtml({
+  unternehmensname,
+  angenommenGesamt,
+  limitGesamt,
+  limitReel,
+  limitStory,
+  limitBild,
+  limitKarussell,
+  angenommenReel,
+  angenommenStory,
+  angenommenBild,
+  angenommenKarussell,
+  adminLink,
+  gesperrtBis,
+}: {
+  unternehmensname: string;
+  angenommenGesamt: number;
+  limitGesamt: number | null;
+  limitReel: number | null;
+  limitStory: number | null;
+  limitBild: number | null;
+  limitKarussell: number | null;
+  angenommenReel: number;
+  angenommenStory: number;
+  angenommenBild: number;
+  angenommenKarussell: number;
+  adminLink: string;
+  gesperrtBis: Date;
+}): string {
+  function row(label: string, angenommen: number, limit: number | null, last = false): string {
+    if (limit === null) return "";
+    const border = last ? "" : "border-bottom:1px solid #f0ede8;";
+    const voll = angenommen >= limit;
+    const badge = voll
+      ? `<span style="display:inline-block;padding:2px 8px;background:#fef2f2;border:1px solid #fecaca;border-radius:999px;font-size:10px;font-weight:600;color:#dc2626;margin-left:6px;">Voll</span>`
+      : "";
+    return `<tr>
+      <td style="padding:10px 18px;width:38%;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;color:#7a766f;${border}white-space:nowrap;">${label}</td>
+      <td style="padding:10px 18px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:13px;color:#2a2a2a;${border}">
+        ${angenommen} / ${limit}${badge}
+      </td>
+    </tr>`;
+  }
+
+  const hatTypLimits = [limitReel, limitStory, limitBild, limitKarussell].some(l => l !== null);
+
+  const gesperrtBisStr = gesperrtBis.toLocaleString("de-DE", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+    timeZone: "Europe/Berlin",
+  });
+
+  const gesamtZeile = limitGesamt !== null
+    ? `<tr>
+        <td style="padding:10px 18px;width:38%;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;color:#7a766f;border-bottom:1px solid #f0ede8;white-space:nowrap;">Gesamt</td>
+        <td style="padding:10px 18px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#111111;border-bottom:1px solid #f0ede8;">${angenommenGesamt} / ${limitGesamt}</td>
+      </tr>`
+    : "";
+
+  const typZeilen = hatTypLimits
+    ? [
+        row("Reels", angenommenReel, limitReel),
+        row("Stories", angenommenStory, limitStory),
+        row("Bilder", angenommenBild, limitBild),
+        row("Karussells", angenommenKarussell, limitKarussell, limitGesamt === null),
+      ].join("")
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="de" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<title>JS Media CRM</title>
+<style type="text/css">
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box;}
+body{margin:0;padding:0;background:#f3f1ed;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;}
+img{border:0;outline:none;}
+@media only screen and (max-width:640px){.ec{padding-left:24px!important;padding-right:24px!important;}}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f3f1ed;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f3f1ed;padding:40px 16px;">
+<tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;margin:0 auto;">
+
+  <tr><td align="center" style="padding-bottom:24px;">
+    <span style="display:inline-block;padding:5px 14px;background:#dc2626;border-radius:999px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#ffffff;">Freigabe-Limit erreicht</span>
+  </td></tr>
+
+  <tr><td style="background:#ffffff;border-radius:18px;box-shadow:0 1px 4px rgba(0,0,0,0.06),0 4px 24px rgba(0,0,0,0.04);">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+    <tr><td align="center" class="ec" style="padding:36px 48px 0 48px;">
+      <a href="${adminLink}" style="display:inline-block;">
+        <img src="https://crm.jonathanscheele.de/logo.png" alt="JS Media" width="48" height="48" style="display:block;width:48px;height:48px;border-radius:11px;"/>
+      </a>
+    </td></tr>
+
+    <tr><td align="center" class="ec" style="padding:20px 48px 0 48px;">
+      <p style="margin:0;font-family:'EB Garamond',Georgia,serif;font-weight:500;font-size:30px;line-height:1.2;color:#111111;letter-spacing:-0.01em;text-align:center;">
+        Content-Ideen<br/><em style="font-style:italic;font-weight:400;color:#dc2626;">gesperrt.</em>
+      </p>
+    </td></tr>
+
+    <tr><td align="center" class="ec" style="padding:18px 48px 0 48px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="width:20px;border-top:1px solid #e6e3dd;line-height:0;font-size:0;">&nbsp;</td>
+        <td style="padding:0 8px;font-family:'EB Garamond',Georgia,serif;font-size:12px;color:#9b9690;line-height:1;">✦</td>
+        <td style="width:20px;border-top:1px solid #e6e3dd;line-height:0;font-size:0;">&nbsp;</td>
+      </tr></table>
+    </td></tr>
+
+    <tr><td class="ec" style="padding:16px 56px 0 56px;">
+      <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#4b5468;text-align:center;">
+        <strong style="color:#111;">${unternehmensname}</strong> hat das monatliche Freigabe-Limit erreicht.<br/>
+        Die Inhalts-Freigabe ist bis <strong style="color:#111;">${gesperrtBisStr} Uhr</strong> gesperrt.
+      </p>
+    </td></tr>
+
+    <tr><td class="ec" style="padding:28px 48px 0 48px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e6e3dd;border-radius:12px;overflow:hidden;">
+
+        <tr><td colspan="2" style="padding:10px 18px 8px;background:#f8f7f5;border-bottom:1px solid #e6e3dd;">
+          <p style="margin:0;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:10px;letter-spacing:0.20em;text-transform:uppercase;color:#9b9690;">Kunde</p>
+        </td></tr>
+        <tr>
+          <td style="padding:10px 18px;width:38%;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;color:#7a766f;border-bottom:1px solid #f0ede8;white-space:nowrap;">Unternehmensname</td>
+          <td style="padding:10px 18px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#111111;border-bottom:1px solid #f0ede8;">${unternehmensname}</td>
+        </tr>
+
+        <tr><td colspan="2" style="padding:10px 18px 8px;background:#f8f7f5;border-bottom:1px solid #e6e3dd;border-top:1px solid #e6e3dd;">
+          <p style="margin:0;font-family:'EB Garamond',Georgia,serif;font-style:italic;font-size:10px;letter-spacing:0.20em;text-transform:uppercase;color:#9b9690;">Freigabe-Stand</p>
+        </td></tr>
+
+        ${gesamtZeile}
+        ${typZeilen}
+
+        <tr>
+          <td colspan="2" style="padding:10px 18px;background:#fef2f2;border-top:1px solid #fecaca;">
+            <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;color:#991b1b;line-height:1.5;">
+              🔒 &nbsp;Neue Freigaben sind gesperrt bis <strong>${gesperrtBisStr} Uhr</strong>.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+
+    <tr><td align="center" class="ec" style="padding:28px 48px 0 48px;">
+      <a href="${adminLink}" style="display:inline-block;padding:13px 28px;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#ffffff;text-decoration:none;background:#1a1818;border-radius:4px;">
+        Im CRM öffnen &nbsp;→
+      </a>
+    </td></tr>
+
+    <tr><td align="center" class="ec" style="padding:28px 48px 36px 48px;">
+      <p style="margin:0;font-family:'Inter',Helvetica,Arial,sans-serif;font-size:11px;color:#b0b7c4;letter-spacing:0.04em;text-align:center;line-height:1.7;">
+        Automatische Benachrichtigung · JS Media CRM
+      </p>
+    </td></tr>
+
+  </table>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}

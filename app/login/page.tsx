@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import ThemeToggle from "@/components/ThemeToggle";
-import LangToggle from "@/components/LangToggle";
 import { useT } from "@/lib/i18n";
-import WaveBackground from "@/components/WaveBackground";
 
 export default function LoginPage() {
   const t = useT();
@@ -40,79 +37,168 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 overflow-hidden">
+    <div
+      className="dark min-h-screen flex items-center justify-center relative overflow-hidden"
+      style={{ background: "#100e0b" }}
+    >
+      {/* ── Blueprint grid ─────────────────────────────────── */}
+      <div className="hero-blueprint" />
 
-      <WaveBackground />
+      {/* ── Vignette ───────────────────────────────────────── */}
+      <div className="hero-vignette" />
 
+      {/* ── Gold orbs ──────────────────────────────────────── */}
+      <div className="hero-orb-a" />
+      <div className="hero-orb-b" />
+
+      {/* ── Left vertical gold bar ─────────────────────────── */}
+      <div className="hero-vbar" />
+
+      {/* ── Success flash ──────────────────────────────────── */}
       {success && (
         <div
           className="login-screen-flash pointer-events-none fixed inset-0 z-50"
-          style={{ background: "var(--surface)" }}
+          style={{ background: "#100e0b" }}
         />
       )}
-
       {success && (
         <div
           className="login-overlay-pulse pointer-events-none fixed z-40"
           style={{
-            top: "50%",
-            left: "50%",
+            top: "50%", left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "420px",
-            height: "420px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(69,70,200,0.45) 0%, rgba(69,70,200,0.15) 45%, transparent 72%)",
+            width: "420px", height: "420px", borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(184,149,106,0.45) 0%, rgba(184,149,106,0.15) 45%, transparent 72%)",
           }}
         />
       )}
 
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-        <LangToggle />
-        <ThemeToggle />
-      </div>
+      {/* ── Login card ─────────────────────────────────────── */}
+      <div className="w-full max-w-sm relative z-10 px-4">
 
-      <div className="w-full max-w-sm relative z-10 login-enter">
-        <div className="flex justify-center mb-6">
-          <img
-            src="/logo.png"
-            alt="JS Media"
-            width={96}
-            height={96}
-            className={`dark:hidden ${success ? "login-logo-burst" : ""}`}
-            style={success ? { position: "relative", zIndex: 45 } : undefined}
-          />
+        {/* Logo */}
+        <div className="flex justify-center mb-5 anim-fade-up">
           <img
             src="/logo-white.png"
             alt="JS Media"
-            width={96}
-            height={96}
-            className={`hidden dark:block ${success ? "login-logo-burst" : ""}`}
+            width={72}
+            height={72}
+            className={success ? "login-logo-burst" : ""}
             style={success ? { position: "relative", zIndex: 45 } : undefined}
           />
         </div>
 
+        {/* Eyebrow */}
+        <div className="flex items-center justify-center gap-3 mb-4 anim-fade-up-1">
+          <span
+            style={{
+              display: "block", width: "24px", height: "1px",
+              background: "#b8956a",
+              animation: "line-grow 0.8s 0.3s both",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "0.62rem", letterSpacing: "0.20em",
+              textTransform: "uppercase", color: "#b8956a", opacity: 0.75,
+            }}
+          >
+            Social Media Agentur
+          </span>
+          <span
+            style={{
+              display: "block", width: "24px", height: "1px",
+              background: "#b8956a",
+              animation: "line-grow 0.8s 0.3s both",
+            }}
+          />
+        </div>
+
         <div className={success ? "login-form-exit pointer-events-none" : ""}>
-          <div className="text-center mb-8">
-            <h1 className="text-fg text-2xl font-semibold tracking-tight">{t.login.titel}</h1>
-            <p className="text-muted text-sm mt-1">{t.login.untertitel}</p>
+          {/* Heading */}
+          <div className="text-center mb-6 anim-fade-up-2">
+            <h1
+              style={{
+                fontFamily: "var(--font-playfair), 'Playfair Display', serif",
+                fontSize: "clamp(2rem, 5vw, 2.8rem)",
+                fontWeight: 700, fontStyle: "italic",
+                color: "#f6f4f1", lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {t.login.titel}
+            </h1>
+            <p
+              style={{
+                marginTop: "0.5rem", fontSize: "0.82rem",
+                color: "rgba(246,244,241,0.38)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {t.login.untertitel}
+            </p>
           </div>
 
-          <div className="bg-card rounded-2xl border border-divider shadow-sm p-6">
+          {/* Form card */}
+          <div
+            className="anim-fade-up-3"
+            style={{
+              background: "rgba(26,22,18,0.72)",
+              backdropFilter: "blur(28px) saturate(150%)",
+              WebkitBackdropFilter: "blur(28px) saturate(150%)",
+              border: "1px solid rgba(184,149,106,0.20)",
+              borderRadius: "4px",
+              boxShadow: "inset 0 1px 0 rgba(184,149,106,0.10), 0 8px 40px rgba(0,0,0,0.40)",
+              padding: "1.75rem",
+            }}
+          >
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-fg mb-1.5">{t.login.email}</label>
+                <label
+                  style={{
+                    display: "block", fontSize: "0.72rem",
+                    fontWeight: 500, letterSpacing: "0.10em",
+                    textTransform: "uppercase",
+                    color: "rgba(246,244,241,0.45)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {t.login.email}
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder={t.login.emailPlaceholder}
-                  className="w-full bg-elevated border border-divider text-fg rounded-xl px-4 py-3 text-sm placeholder:text-subtle focus:outline-none focus:border-accent transition-colors"
+                  style={{
+                    width: "100%",
+                    background: "rgba(16,14,11,0.60)",
+                    border: "1px solid rgba(184,149,106,0.18)",
+                    color: "#f6f4f1",
+                    borderRadius: "2px",
+                    padding: "0.75rem 1rem",
+                    fontSize: "0.9rem",
+                    outline: "none",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={e => (e.target.style.borderColor = "rgba(184,149,106,0.55)")}
+                  onBlur={e => (e.target.style.borderColor = "rgba(184,149,106,0.18)")}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-fg mb-1.5">{t.login.passwort}</label>
+                <label
+                  style={{
+                    display: "block", fontSize: "0.72rem",
+                    fontWeight: 500, letterSpacing: "0.10em",
+                    textTransform: "uppercase",
+                    color: "rgba(246,244,241,0.45)",
+                    marginBottom: "0.5rem",
+                  }}
+                >
+                  {t.login.passwort}
+                </label>
                 <div className="relative">
                   <input
                     type={passwortSichtbar ? "text" : "password"}
@@ -120,22 +206,39 @@ export default function LoginPage() {
                     onChange={(e) => setPasswort(e.target.value)}
                     required
                     placeholder={t.login.passwortPlaceholder}
-                    className="w-full bg-elevated border border-divider text-fg rounded-xl px-4 py-3 pr-11 text-sm placeholder:text-subtle focus:outline-none focus:border-accent transition-colors"
+                    style={{
+                      width: "100%",
+                      background: "rgba(16,14,11,0.60)",
+                      border: "1px solid rgba(184,149,106,0.18)",
+                      color: "#f6f4f1",
+                      borderRadius: "2px",
+                      padding: "0.75rem 2.8rem 0.75rem 1rem",
+                      fontSize: "0.9rem",
+                      outline: "none",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={e => (e.target.style.borderColor = "rgba(184,149,106,0.55)")}
+                    onBlur={e => (e.target.style.borderColor = "rgba(184,149,106,0.18)")}
                   />
                   <button
                     type="button"
                     onClick={() => setPasswortSichtbar(!passwortSichtbar)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-muted transition-colors"
                     tabIndex={-1}
+                    style={{
+                      position: "absolute", right: "0.75rem", top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "rgba(246,244,241,0.28)", padding: 0,
+                    }}
                   >
                     {passwortSichtbar ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
                         <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
                         <line x1="1" y1="1" x2="23" y2="23"/>
                       </svg>
                     ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>
                       </svg>
@@ -145,7 +248,16 @@ export default function LoginPage() {
               </div>
 
               {fehler && (
-                <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl px-3 py-2">
+                <p
+                  style={{
+                    fontSize: "0.82rem",
+                    color: "#f87171",
+                    background: "rgba(239,68,68,0.08)",
+                    border: "1px solid rgba(239,68,68,0.20)",
+                    borderRadius: "2px",
+                    padding: "0.6rem 0.85rem",
+                  }}
+                >
                   {fehler}
                 </p>
               )}
@@ -153,13 +265,70 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={laden || success}
-                className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl py-3 text-sm transition-colors"
+                style={{
+                  width: "100%",
+                  background: laden || success ? "rgba(184,149,106,0.45)" : "#b8956a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "2px",
+                  padding: "0.85rem",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  cursor: laden || success ? "not-allowed" : "pointer",
+                  transition: "background 0.2s, transform 0.15s, box-shadow 0.15s",
+                  marginTop: "0.5rem",
+                }}
+                onMouseEnter={e => {
+                  if (!laden && !success) {
+                    (e.target as HTMLButtonElement).style.background = "#7a5c38";
+                    (e.target as HTMLButtonElement).style.transform = "translateY(-1px)";
+                    (e.target as HTMLButtonElement).style.boxShadow = "0 8px 24px rgba(184,149,106,0.28)";
+                  }
+                }}
+                onMouseLeave={e => {
+                  (e.target as HTMLButtonElement).style.background = laden || success ? "rgba(184,149,106,0.45)" : "#b8956a";
+                  (e.target as HTMLButtonElement).style.transform = "none";
+                  (e.target as HTMLButtonElement).style.boxShadow = "none";
+                }}
               >
                 {laden ? t.login.anmeldet : t.login.anmelden}
               </button>
             </form>
           </div>
         </div>
+      </div>
+
+      {/* ── Bottom ruler bar ───────────────────────────────── */}
+      <div
+        style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          height: "42px", zIndex: 2,
+          display: "flex", alignItems: "center", padding: "0 8vw",
+          borderTop: "1px solid rgba(184,149,106,0.10)",
+          background: "rgba(12,10,8,0.60)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "0.55rem", letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "rgba(184,149,106,0.30)",
+          }}
+        >
+          JS Media · Social Media Agentur
+        </span>
+        <div style={{ flex: 1 }} />
+        <span
+          style={{
+            fontSize: "0.55rem", letterSpacing: "0.12em",
+            color: "rgba(184,149,106,0.20)",
+          }}
+        >
+          {new Date().getFullYear()}
+        </span>
       </div>
     </div>
   );

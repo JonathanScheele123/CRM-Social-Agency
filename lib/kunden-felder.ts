@@ -3,7 +3,7 @@ const STRING_FELDER = [
   "branche", "telefonnummer", "webseite", "emailDirekt", "socialMediaKanaele",
   "freigabeVerantwortlicher", "emailFreigabeVerantwortlicher",
   "freigabeVerantwortlicher2", "emailFreigabeVerantwortlicher2",
-  "cloudLink", "zusatzlinks",
+  "cloudLink", "kundeDriveLink", "zusatzlinks",
   "linkInstagram", "linkFacebook", "linkTikTok", "linkYouTube",
   "statusKunde", "kundenKategorie", "kundenzufriedenheit", "archiv", "kundenfeedback",
   "notizenIntern", "contentIdeen", "postingKalender", "mitarbeiterImBildRechtlichGeklaert",

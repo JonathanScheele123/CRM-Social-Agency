@@ -19,12 +19,12 @@ export default function WaveBackground() {
     window.addEventListener("resize", resize);
 
     const bands = [
-      { color: [59,  130, 246] as [number,number,number], alpha: 0.055, amp: 55,  freq: 0.0018, speed: 0.00090, y: 0.30, phase: 0.0 },
-      { color: [236, 72,  153] as [number,number,number], alpha: 0.050, amp: 70,  freq: 0.0014, speed: 0.00063, y: 0.48, phase: 1.8 },
-      { color: [59,  130, 246] as [number,number,number], alpha: 0.045, amp: 45,  freq: 0.0022, speed: 0.00117, y: 0.62, phase: 3.4 },
-      { color: [139, 92,  246] as [number,number,number], alpha: 0.040, amp: 60,  freq: 0.0016, speed: 0.00081, y: 0.20, phase: 5.1 },
-      { color: [236, 72,  153] as [number,number,number], alpha: 0.035, amp: 40,  freq: 0.0026, speed: 0.00054, y: 0.75, phase: 2.6 },
-      { color: [59,  130, 246] as [number,number,number], alpha: 0.030, amp: 80,  freq: 0.0011, speed: 0.00045, y: 0.10, phase: 4.2 },
+      { color: [184, 149, 106] as [number,number,number], alpha: 0.055, amp: 55,  freq: 0.0018, speed: 0.00090, y: 0.30, phase: 0.0 },
+      { color: [122, 92,  56 ] as [number,number,number], alpha: 0.045, amp: 70,  freq: 0.0014, speed: 0.00063, y: 0.48, phase: 1.8 },
+      { color: [212, 176, 138] as [number,number,number], alpha: 0.040, amp: 45,  freq: 0.0022, speed: 0.00117, y: 0.62, phase: 3.4 },
+      { color: [184, 149, 106] as [number,number,number], alpha: 0.035, amp: 60,  freq: 0.0016, speed: 0.00081, y: 0.20, phase: 5.1 },
+      { color: [122, 92,  56 ] as [number,number,number], alpha: 0.030, amp: 40,  freq: 0.0026, speed: 0.00054, y: 0.75, phase: 2.6 },
+      { color: [212, 176, 138] as [number,number,number], alpha: 0.025, amp: 80,  freq: 0.0011, speed: 0.00045, y: 0.10, phase: 4.2 },
     ];
 
     let t = 0;

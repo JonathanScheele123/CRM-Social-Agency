@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { sendEmail } from "@/lib/email";
+import { sendSms } from "@/lib/sms";
+import { benachrichtigungContentStrategieHtml } from "@/lib/benachrichtigung-content-strategie-email";
+
+const ADMIN_PHONE = "+4917184688848";
 
 export async function PATCH(
   req: NextRequest,
@@ -55,6 +60,63 @@ export async function PATCH(
       selbstAuftreten:                d.selbstAuftreten || null,
     },
   });
+
+  // ── Admin-Benachrichtigung ─────────────────────────────────────────────────
+  try {
+    const profil = await prisma.kundenprofil.findUnique({
+      where: { id: kundenprofilId },
+      select: {
+        unternehmensname: true,
+        freigabeVerantwortlicher: true,
+        emailFreigabeVerantwortlicher: true,
+        hauptziel: true,
+        zielgruppe: true,
+        contentThemen: true,
+        contentStil: true,
+        drehtageAnWelchenTagen: true,
+        drehtageUhrzeiten: true,
+      },
+    });
+
+    if (profil) {
+      const base = (process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de").replace(/\/$/, "");
+      const adminLink = `${base}/admin/kunden/${kundenprofilId}`;
+      const unternehmensname = profil.unternehmensname ?? "Unbekannt";
+
+      const html = benachrichtigungContentStrategieHtml({
+        unternehmensname,
+        freigabeVerantwortlicher: profil.freigabeVerantwortlicher,
+        emailFreigabeVerantwortlicher: profil.emailFreigabeVerantwortlicher,
+        hauptziel: profil.hauptziel,
+        zielgruppe: profil.zielgruppe,
+        contentThemen: profil.contentThemen,
+        contentStil: profil.contentStil,
+        drehtageAnWelchenTagen: profil.drehtageAnWelchenTagen,
+        drehtageUhrzeiten: profil.drehtageUhrzeiten,
+        adminLink,
+      });
+
+      await sendEmail({
+        to: "kontakt@jonathanscheele.de",
+        subject: `Content-Strategie ausgefüllt: ${unternehmensname}`,
+        text: `${unternehmensname} hat den Content-Strategie-Fragebogen ausgefüllt.\n\nIm CRM öffnen: ${adminLink}`,
+        html,
+      });
+    }
+  } catch (e) {
+    console.error("[content-strategie] Admin-Benachrichtigung fehlgeschlagen:", e);
+  }
+
+  // ── SMS-Benachrichtigung ───────────────────────────────────────────────────
+  try {
+    const profil = await prisma.kundenprofil.findUnique({
+      where: { id: kundenprofilId },
+      select: { unternehmensname: true },
+    });
+    await sendSms(ADMIN_PHONE, `📊 Content-Strategie ausgefüllt: ${profil?.unternehmensname ?? "Unbekannt"}`);
+  } catch (e) {
+    console.error("[content-strategie] SMS fehlgeschlagen:", e);
+  }
 
   return Response.json({ success: true }, { status: 200 });
 }

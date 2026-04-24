@@ -27,7 +27,7 @@ export default function GlobalError({
 
           <button
             onClick={() => window.location.reload()}
-            style={{ padding: "10px 22px", borderRadius: "12px", background: "#292a91", color: "#fff", border: "none", fontSize: "14px", fontWeight: 500, cursor: "pointer" }}
+            style={{ padding: "10px 22px", borderRadius: "12px", background: "#b8956a", color: "#fff", border: "none", fontSize: "14px", fontWeight: 500, cursor: "pointer" }}
           >
             Seite aktualisieren
           </button>

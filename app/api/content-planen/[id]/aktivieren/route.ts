@@ -34,7 +34,7 @@ export async function POST(
     }
   }
 
-  const [kalenderEintrag] = await prisma.$transaction([
+  const [kalenderEintrag] = await Promise.all([
     prisma.kalenderEintrag.create({
       data: {
         kundenprofilId: idee.kundenprofilId,

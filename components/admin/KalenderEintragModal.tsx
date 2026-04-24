@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DateizugriffVorschau from "@/components/shared/DateizugriffVorschau";
+import ModalPortal from "@/components/ModalPortal";
 
 const PLATTFORMEN = ["Instagram", "Facebook", "TikTok", "YouTube", "Sonstiges"];
 const CONTENT_TYPEN = ["Reel", "Story", "Bild", "Karussell"];
@@ -11,15 +12,15 @@ const FREIGABE_STATUS = ["Ausstehend", "Freigegeben", "Abgelehnt"];
 const FREIGABE_LABEL: Record<string, string> = { Ausstehend: "Offen", Freigegeben: "Freigegeben", Abgelehnt: "Abgelehnt" };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
 };
 
 const FREIGABE_FARBEN: Record<string, string> = {
-  Ausstehend: "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Ausstehend: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   Freigegeben: "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300",
   Abgelehnt: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
 };
@@ -143,6 +144,7 @@ export default function KalenderEintragModal({ kundenprofilId, eintrag, onClose,
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div
         className="glass-modal rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
@@ -329,5 +331,6 @@ export default function KalenderEintragModal({ kundenprofilId, eintrag, onClose,
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 }

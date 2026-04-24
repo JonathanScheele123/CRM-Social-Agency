@@ -84,7 +84,7 @@ export default function BenutzerVerwaltung({
                   {b.zugriffe.map((z) => (
                     <span
                       key={z.id}
-                      className="text-xs bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-lg"
+                      className="text-xs bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-lg"
                     >
                       {z.kundenprofil.unternehmensname ?? "Unbekannt"}
                     </span>

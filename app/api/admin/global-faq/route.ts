@@ -33,12 +33,12 @@ export async function PUT(req: NextRequest) {
   // Batch-Update: replace all items
   const { items } = await req.json() as { items: { id?: string; frage: string; reihenfolge: number }[] };
 
-  await prisma.$transaction([
-    prisma.globalFaqItem.deleteMany({}),
-    ...items.map((item, i) =>
+  await prisma.globalFaqItem.deleteMany({});
+  await Promise.all(
+    items.map((item, i) =>
       prisma.globalFaqItem.create({ data: { frage: item.frage, reihenfolge: i } })
-    ),
-  ]);
+    )
+  );
 
   const updated = await prisma.globalFaqItem.findMany({ orderBy: { reihenfolge: "asc" } });
   return Response.json({ items: updated });

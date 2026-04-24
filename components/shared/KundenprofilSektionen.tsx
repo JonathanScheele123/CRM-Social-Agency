@@ -18,6 +18,7 @@ export type KundenprofilFelder = {
   emailFreigabeVerantwortlicher?: string | null;
   freigabeVerantwortlicher2?: string | null;
   emailFreigabeVerantwortlicher2?: string | null;
+  kundeDriveLink?: string | null;
   cloudLink?: string | null;
   zusatzlinks?: string | null;
   // Vertrag & Status
@@ -174,6 +175,7 @@ export default function KundenprofilSektionen({ profil, kundenAnsicht = false }:
         <Feld label={s.emailPerson1} wert={profil.emailFreigabeVerantwortlicher} />
         <Feld label={s.freigabePerson2} wert={profil.freigabeVerantwortlicher2} />
         <Feld label={s.emailPerson2} wert={profil.emailFreigabeVerantwortlicher2} />
+        <FeldBreit label="Kunden-Drive-Link" wert={profil.kundeDriveLink} />
         <FeldBreit label={s.cloudLink} wert={profil.cloudLink} />
         <FeldBreit label={s.zusatzlinks} wert={profil.zusatzlinks} />
       </Sektion>

@@ -20,16 +20,30 @@ export function getDriveClient() {
   return google.drive({ version: "v3", auth: buildAuth() });
 }
 
-async function createFolder(drive: ReturnType<typeof google.drive>, name: string, parentId: string): Promise<string> {
+async function createFolder(drive: ReturnType<typeof google.drive>, name: string, parentId?: string): Promise<string> {
   const res = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name,
       mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId],
+      ...(parentId ? { parents: [parentId] } : {}),
     },
     fields: "id",
   });
   return res.data.id!;
+}
+
+async function getOderErstelleSaRoot(drive: ReturnType<typeof google.drive>): Promise<string | undefined> {
+  const envId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+  if (envId) {
+    try {
+      await drive.files.get({ fileId: envId, fields: "id", supportsAllDrives: true });
+      return envId;
+    } catch {
+      // Ordner nicht zugänglich — Fallback: SA-eigenes Drive (kein Parent)
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -37,13 +51,12 @@ async function createFolder(drive: ReturnType<typeof google.drive>, name: string
  * Gibt die URL des Hauptordners zurück.
  */
 export async function erstelleKundenOrdner(unternehmensname: string): Promise<string> {
-  const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-  if (!rootFolderId) throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID ist nicht gesetzt.");
-
   const drive = getDriveClient();
 
-  // Hauptordner mit Unternehmensname
-  const hauptId = await createFolder(drive, unternehmensname, rootFolderId);
+  const parentId = await getOderErstelleSaRoot(drive);
+
+  // Hauptordner mit Unternehmensname (parentId = undefined → SA-Drive-Root)
+  const hauptId = await createFolder(drive, unternehmensname, parentId);
 
   // Arbeitsmaterial/ und Rohdateien/ direkt im Hauptordner
   await createFolder(drive, "Arbeitsmaterial", hauptId);
@@ -55,6 +68,17 @@ export async function erstelleKundenOrdner(unternehmensname: string): Promise<st
   await createFolder(drive, "Alt Stories", fertigId);
   await createFolder(drive, "Alt Karussell", fertigId);
   await createFolder(drive, "Alt Bild", fertigId);
+
+  // Hauptordner mit Admin-Google-Account teilen, damit er in Google Drive sichtbar ist
+  const adminEmail = process.env.SMTP_USER;
+  if (adminEmail) {
+    await drive.permissions.create({
+      fileId: hauptId,
+      supportsAllDrives: true,
+      requestBody: { type: "user", role: "writer", emailAddress: adminEmail },
+      sendNotificationEmail: false,
+    });
+  }
 
   return `https://drive.google.com/drive/folders/${hauptId}`;
 }

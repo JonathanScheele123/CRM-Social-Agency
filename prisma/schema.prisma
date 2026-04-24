@@ -165,6 +165,13 @@ model Kundenprofil {
   selbstAuftreten        String?
   wunschdatum            DateTime?
 
+  // Drehtag-Planung
+  drehtag                          DateTime?
+  drehtageAdresse                  String?
+  drehtageStatus                   String?
+  drehtageErinnerungTagGesendet    DateTime?
+  drehtageErinnerungStundeGesendet DateTime?
+
   // Marke & Zielgruppe
   kurzbeschreibung         String?
   kernwerte                String?

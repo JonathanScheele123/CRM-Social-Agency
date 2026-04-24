@@ -84,16 +84,16 @@ function escapeHtml(text: string): string {
 function injectEditScript(html: string, origin: string): string {
   const base = `<base href="${origin}/">`;
   const style = `<style id="__es">
-[data-ce]:hover{outline:1px dashed rgba(41,42,145,0.35);border-radius:2px;cursor:text;}
-[data-ce]:focus{outline:2px solid #292a91;border-radius:2px;outline-offset:1px;}
-a[data-lk]:hover{box-shadow:0 0 0 2px #292a91;border-radius:3px;cursor:pointer !important;}
+[data-ce]:hover{outline:1px dashed rgba(184,149,106,0.45);border-radius:2px;cursor:text;}
+[data-ce]:focus{outline:2px solid #b8956a;border-radius:2px;outline-offset:1px;}
+a[data-lk]:hover{box-shadow:0 0 0 2px #b8956a;border-radius:3px;cursor:pointer !important;}
 a[data-lk]{cursor:pointer !important;}
 #__lp{position:fixed;z-index:99999;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.14);display:none;flex-direction:column;gap:8px;width:290px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
 #__lp label{font-size:11px;color:#64748b;font-weight:500;}
 #__lp input{border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:13px;width:100%;box-sizing:border-box;outline:none;}
-#__lp input:focus{border-color:#292a91;box-shadow:0 0 0 2px rgba(41,42,145,.12);}
+#__lp input:focus{border-color:#b8956a;box-shadow:0 0 0 2px rgba(184,149,106,.18);}
 #__lp .r{display:flex;gap:6px;justify-content:flex-end;margin-top:2px;}
-#__lp .ok{background:#292a91;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;font-weight:500;}
+#__lp .ok{background:#b8956a;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;font-weight:500;}
 #__lp .cl{background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;}
 </style>`;
   const popover = `<div id="__lp">

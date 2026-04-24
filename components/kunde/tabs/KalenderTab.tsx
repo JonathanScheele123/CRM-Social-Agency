@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import ModalPortal from "@/components/ModalPortal";
 import KalenderGrafik, { KalenderGrafikEintrag } from "@/components/shared/KalenderGrafik";
 import { useT, useLang } from "@/lib/i18n";
 
@@ -42,8 +43,8 @@ type KalenderEintrag = {
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
@@ -197,7 +198,7 @@ export default function KalenderTab({ eintraege: alleEintraege, onNavigiereZuCon
 
         <div className="flex flex-wrap items-center gap-4 mb-3">
           {[
-            { farbe: "bg-blue-500",  glow: "glow-blue",  label: t.kalenderTab.morgen },
+            { farbe: "bg-accent",  glow: "glow-gold",  label: t.kalenderTab.morgen },
             { farbe: "bg-green-500", glow: "glow-green", label: t.kalenderTab.heute },
           ].map(l => (
             <div key={l.label} className="flex items-center gap-2 text-xs text-muted">
@@ -251,6 +252,7 @@ export default function KalenderTab({ eintraege: alleEintraege, onNavigiereZuCon
 
       {/* Detail-Modal */}
       {ausgewaehlt && (
+        <ModalPortal>
         <div
           className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setAusgewaehlt(null)}
@@ -299,6 +301,7 @@ export default function KalenderTab({ eintraege: alleEintraege, onNavigiereZuCon
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

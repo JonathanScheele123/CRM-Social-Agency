@@ -39,8 +39,8 @@ const PRIORITAET_FARBEN: Record<string, string> = {
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
@@ -429,13 +429,14 @@ function IdeaDetailModal({ idee, onSchliessen, onGespeichert, onKommentarHinzuge
 
 // ─── Kanban-Karte ─────────────────────────────────────────────────────────────
 
-function KanbanKarte({ idee, onKlick, onStatusAendern, pending, limitErreicht, gesperrt = false }: {
+function KanbanKarte({ idee, onKlick, onStatusAendern, pending, limitErreicht, gesperrt = false, onTouchDragStart }: {
   idee: ContentIdea;
   onKlick: (e: React.MouseEvent) => void;
   onStatusAendern: (neuerStatus: string, kommentar?: string) => void;
   pending: boolean;
   limitErreicht: boolean;
   gesperrt?: boolean;
+  onTouchDragStart?: () => void;
 }) {
   const t = useT();
   const [aktion, setAktion] = useState<{ status: "Angenommen" | "Verworfen"; kommentar: string } | null>(null);
@@ -450,12 +451,24 @@ function KanbanKarte({ idee, onKlick, onStatusAendern, pending, limitErreicht, g
     <div
       draggable={!aktion && !gesperrt}
       onDragStart={e => e.dataTransfer.setData("ideaId", idee.id)}
-      className={`rounded-2xl p-3 shadow-sm transition-all border ${
+      className={`relative rounded-2xl p-3 shadow-sm transition-all border ${
         gesperrt
           ? "bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700/50 cursor-not-allowed"
           : "glass-modal hover:shadow-md hover:border-muted/40 cursor-grab active:cursor-grabbing"
       }`}
     >
+      {!gesperrt && !aktion && onTouchDragStart && (
+        <div
+          className="md:hidden absolute top-2.5 right-2.5 p-1.5 touch-none select-none cursor-grab active:cursor-grabbing"
+          onTouchStart={e => { e.preventDefault(); e.stopPropagation(); onTouchDragStart(); }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-muted/40">
+            <circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/>
+            <circle cx="9" cy="12" r="2"/><circle cx="15" cy="12" r="2"/>
+            <circle cx="9" cy="19" r="2"/><circle cx="15" cy="19" r="2"/>
+          </svg>
+        </div>
+      )}
       <div className="flex items-start gap-2 cursor-pointer mb-2" onClick={aktion ? undefined : (e) => onKlick(e)}>
         {idee.contentTyp && CONTENT_TYP_BADGE[idee.contentTyp] && (
           <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg border ${CONTENT_TYP_BADGE[idee.contentTyp].cls}`}>
@@ -582,7 +595,11 @@ export default function ContentIdeenTab({
   const [klickOrigin, setKlickOrigin] = useState<{ x: number; y: number } | undefined>();
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const [touchDragging, setTouchDragging] = useState<string | null>(null);
+  const [touchDragOver, setTouchDragOver] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
+  const touchDraggingRef = useRef<string | null>(null);
+  const handleTouchDropRef = useRef<(id: string, spalte: string) => void>(() => {});
 
   // Sync local state when parent changes (additions, rollbacks, external changes)
   useEffect(() => {
@@ -629,6 +646,53 @@ export default function ContentIdeenTab({
     setDragOver(null);
     dragIdRef.current = null;
   }
+
+  function handleTouchDrop(id: string, spalte: string) {
+    const currentStatus = lokalIdeen.find(i => i.id === id)?.status ?? "Offen";
+    if (spalte === currentStatus) return;
+    if (spalte === "Angenommen") {
+      const idee = lokalIdeen.find(i => i.id === id);
+      if (idee && istTypLimitErreicht(idee.contentTyp)) return;
+    }
+    statusAendern(id, spalte);
+  }
+  handleTouchDropRef.current = handleTouchDrop;
+
+  function handleTouchStart(ideaId: string) {
+    dragIdRef.current = ideaId;
+    touchDraggingRef.current = ideaId;
+    setTouchDragging(ideaId);
+  }
+
+  useEffect(() => {
+    if (!touchDragging) return;
+    function onMove(e: TouchEvent) {
+      if (!touchDraggingRef.current) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const col = el?.closest('[data-spalte]')?.getAttribute('data-spalte') ?? null;
+      setTouchDragOver(col);
+    }
+    function onEnd(e: TouchEvent) {
+      const id = touchDraggingRef.current;
+      if (!id) return;
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const col = el?.closest('[data-spalte]')?.getAttribute('data-spalte');
+      if (col) handleTouchDropRef.current(id, col);
+      dragIdRef.current = null;
+      touchDraggingRef.current = null;
+      setTouchDragging(null);
+      setTouchDragOver(null);
+    }
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    return () => {
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    };
+  }, [touchDragging]);
 
   const angenommenAnzahl = lokalIdeen.filter(i => i.status === "Angenommen").length;
 
@@ -787,7 +851,19 @@ export default function ContentIdeenTab({
         {(["Offen", "Angenommen"] as const).map(spalte => {
           const spaltenIdeen = ideenProSpalte(spalte);
           return (
-            <div key={spalte} className={`rounded-2xl p-3 ${gesperrt ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40" : ""}`}>
+            <div
+              key={spalte}
+              data-spalte={spalte}
+              className={`rounded-2xl p-3 transition-colors ${
+                gesperrt
+                  ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40"
+                  : touchDragOver === spalte
+                  ? spalte === "Angenommen" && limitErreicht
+                    ? "bg-red-500/5 ring-2 ring-red-400/30"
+                    : "bg-accent/5 ring-2 ring-accent/20"
+                  : ""
+              }`}
+            >
               <div className="flex items-center gap-2 mb-3 pb-2 border-b border-divider">
                 <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${gesperrt ? "bg-red-400" : SPALTEN_DOT[spalte]}`} />
                 <h3 className={`font-medium text-sm ${gesperrt ? "text-red-700 dark:text-red-400" : "text-fg"}`}>{spaltenLabel[spalte]}</h3>
@@ -803,6 +879,7 @@ export default function ContentIdeenTab({
                     pending={pendingIds.has(idee.id)}
                     limitErreicht={istTypLimitErreicht(idee.contentTyp)}
                     gesperrt={gesperrt}
+                    onTouchDragStart={() => handleTouchStart(idee.id)}
                   />
                 ))}
                 {spaltenIdeen.length === 0 && (
@@ -815,7 +892,10 @@ export default function ContentIdeenTab({
 
         {/* Verworfen collapsible on mobile */}
         {ideenProSpalte("Verworfen").length > 0 && (
-          <div>
+          <div
+            data-spalte="Verworfen"
+            className={`rounded-2xl transition-colors ${touchDragOver === "Verworfen" ? "bg-accent/5 ring-2 ring-accent/20" : ""}`}
+          >
             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-divider">
               <span className="w-2.5 h-2.5 rounded-full shrink-0 bg-gray-400" />
               <h3 className="font-medium text-sm text-fg">{t.contentIdeen.verworfen}</h3>
@@ -830,6 +910,7 @@ export default function ContentIdeenTab({
                   onStatusAendern={(s, k) => statusAendern(idee.id, s, k)}
                   pending={pendingIds.has(idee.id)}
                   limitErreicht={limitErreicht}
+                  onTouchDragStart={() => handleTouchStart(idee.id)}
                 />
               ))}
             </div>

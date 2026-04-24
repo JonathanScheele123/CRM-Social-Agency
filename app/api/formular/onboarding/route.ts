@@ -4,7 +4,11 @@ import bcrypt from "bcryptjs";
 import { erstelleKundenOrdner } from "@/lib/drive";
 import { logFehler } from "@/lib/fehlerlog";
 import { sendEmail } from "@/lib/email";
+import { sendSms } from "@/lib/sms";
 import { willkommenEmailHtml } from "@/lib/willkommen-email";
+import { benachrichtigungOnboardingHtml } from "@/lib/benachrichtigung-onboarding-email";
+
+const ADMIN_PHONE = "+4917184688848";
 
 export async function POST(req: NextRequest) {
   const d = await req.json();
@@ -31,99 +35,94 @@ export async function POST(req: NextRequest) {
 
   const rolleHauptuser = emailPerson1 && emailOben === emailPerson1 ? "Inhaber" : "Mitarbeiter";
 
-  const result = await prisma.$transaction(async (tx) => {
-    const kundenprofil = await tx.kundenprofil.create({
-      data: {
-        unternehmensname: d.unternehmensname || null,
-        ansprechpartner: d.ansprechpartner || null,
-        geschaeftsadresse: d.geschaeftsadresse || null,
-        emailAnsprechpartner: d.email || null,
-        telefonnummer: d.telefonnummer || null,
-        branche: d.branche || null,
-        webseite: d.webseite || null,
-        socialMediaKanaele: d.socialMediaKanaele || null,
-        freigabeVerantwortlicher: d.freigabeVerantwortlicher || null,
-        emailFreigabeVerantwortlicher: d.emailFreigabeVerantwortlicher || null,
-        freigabeVerantwortlicher2: d.freigabeVerantwortlicher2 || null,
-        emailFreigabeVerantwortlicher2: d.emailFreigabeVerantwortlicher2 || null,
-        cloudLink: d.cloudLink || null,
-        zusatzlinks: d.zusatzlinks || null,
-      },
-    });
-
-    // Hauptuser (top E-Mail)
-    const hauptUser = await tx.user.create({
-      data: {
-        email: d.email,
-        name: d.ansprechpartner || d.unternehmensname,
-        passwort: hashedPasswort,
-        rolle: "KUNDE",
-        aktiv: true,
-        mustChangePassword: true,
-        passwortGeaendert: false,
-      },
-    });
-
-    await tx.kundenprofilZugriff.create({
-      data: {
-        userId: hauptUser.id,
-        kundenprofilId: kundenprofil.id,
-        kundenRolle: rolleHauptuser,
-      },
-    });
-
-    // Person 1: separater User wenn E-Mail von top abweicht
-    if (emailPerson1 && emailPerson1 !== emailOben) {
-      const existiert = await tx.user.findUnique({ where: { email: emailPerson1 } });
-      if (!existiert) {
-        const person1User = await tx.user.create({
-          data: {
-            email: d.emailFreigabeVerantwortlicher,
-            name: d.freigabeVerantwortlicher || null,
-            passwort: hashedPasswort,
-            rolle: "KUNDE",
-            aktiv: true,
-            mustChangePassword: true,
-            passwortGeaendert: false,
-          },
-        });
-        await tx.kundenprofilZugriff.create({
-          data: {
-            userId: person1User.id,
-            kundenprofilId: kundenprofil.id,
-            kundenRolle: "Mitarbeiter",
-          },
-        });
-      }
-    }
-
-    // Person 2: immer Mitarbeiter, eigener User wenn vorhanden und neu
-    if (emailPerson2 && emailPerson2 !== emailOben && emailPerson2 !== emailPerson1) {
-      const existiert = await tx.user.findUnique({ where: { email: emailPerson2 } });
-      if (!existiert) {
-        const person2User = await tx.user.create({
-          data: {
-            email: d.emailFreigabeVerantwortlicher2,
-            name: d.freigabeVerantwortlicher2 || null,
-            passwort: hashedPasswort,
-            rolle: "KUNDE",
-            aktiv: true,
-            mustChangePassword: true,
-            passwortGeaendert: false,
-          },
-        });
-        await tx.kundenprofilZugriff.create({
-          data: {
-            userId: person2User.id,
-            kundenprofilId: kundenprofil.id,
-            kundenRolle: "Mitarbeiter",
-          },
-        });
-      }
-    }
-
-    return { kundenprofil, hauptUser };
+  const kundenprofil = await prisma.kundenprofil.create({
+    data: {
+      unternehmensname: d.unternehmensname || null,
+      ansprechpartner: d.ansprechpartner || null,
+      geschaeftsadresse: d.geschaeftsadresse || null,
+      emailAnsprechpartner: d.email || null,
+      telefonnummer: d.telefonnummer || null,
+      branche: d.branche || null,
+      webseite: d.webseite || null,
+      socialMediaKanaele: d.socialMediaKanaele || null,
+      freigabeVerantwortlicher: d.freigabeVerantwortlicher || null,
+      emailFreigabeVerantwortlicher: d.emailFreigabeVerantwortlicher || null,
+      freigabeVerantwortlicher2: d.freigabeVerantwortlicher2 || null,
+      emailFreigabeVerantwortlicher2: d.emailFreigabeVerantwortlicher2 || null,
+      kundeDriveLink: d.kundeDriveLink || null,
+      zusatzlinks: d.zusatzlinks || null,
+    },
   });
+
+  const hauptUser = await prisma.user.create({
+    data: {
+      email: d.email,
+      name: d.ansprechpartner || d.unternehmensname,
+      passwort: hashedPasswort,
+      rolle: "KUNDE",
+      aktiv: true,
+      mustChangePassword: true,
+      passwortGeaendert: false,
+    },
+  });
+
+  await prisma.kundenprofilZugriff.create({
+    data: {
+      userId: hauptUser.id,
+      kundenprofilId: kundenprofil.id,
+      kundenRolle: rolleHauptuser,
+    },
+  });
+
+  if (emailPerson1 && emailPerson1 !== emailOben) {
+    const existiert = await prisma.user.findUnique({ where: { email: emailPerson1 } });
+    if (!existiert) {
+      const person1User = await prisma.user.create({
+        data: {
+          email: d.emailFreigabeVerantwortlicher,
+          name: d.freigabeVerantwortlicher || null,
+          passwort: hashedPasswort,
+          rolle: "KUNDE",
+          aktiv: true,
+          mustChangePassword: true,
+          passwortGeaendert: false,
+        },
+      });
+      await prisma.kundenprofilZugriff.create({
+        data: {
+          userId: person1User.id,
+          kundenprofilId: kundenprofil.id,
+          kundenRolle: "Mitarbeiter",
+        },
+      });
+    }
+  }
+
+  if (emailPerson2 && emailPerson2 !== emailOben && emailPerson2 !== emailPerson1) {
+    const existiert = await prisma.user.findUnique({ where: { email: emailPerson2 } });
+    if (!existiert) {
+      const person2User = await prisma.user.create({
+        data: {
+          email: d.emailFreigabeVerantwortlicher2,
+          name: d.freigabeVerantwortlicher2 || null,
+          passwort: hashedPasswort,
+          rolle: "KUNDE",
+          aktiv: true,
+          mustChangePassword: true,
+          passwortGeaendert: false,
+        },
+      });
+      await prisma.kundenprofilZugriff.create({
+        data: {
+          userId: person2User.id,
+          kundenprofilId: kundenprofil.id,
+          kundenRolle: "Mitarbeiter",
+        },
+      });
+    }
+  }
+
+  const result = { kundenprofil, hauptUser };
 
   // Drive-Ordner asynchron erstellen
   try {
@@ -165,6 +164,42 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     console.error("[onboarding] Willkommens-E-Mail fehlgeschlagen:", e);
+  }
+
+  // ── Admin-Benachrichtigung ─────────────────────────────────────────────────
+  try {
+    const base = (process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de").replace(/\/$/, "");
+    const adminLink = `${base}/admin/kunden/${result.kundenprofil.id}`;
+    const html = benachrichtigungOnboardingHtml({
+      unternehmensname: d.unternehmensname,
+      ansprechpartner: d.ansprechpartner || null,
+      emailAnsprechpartner: d.email || null,
+      telefonnummer: d.telefonnummer || null,
+      branche: d.branche || null,
+      webseite: d.webseite || null,
+      socialMediaKanaele: d.socialMediaKanaele || null,
+      freigabeVerantwortlicher: d.freigabeVerantwortlicher || null,
+      emailFreigabeVerantwortlicher: d.emailFreigabeVerantwortlicher || null,
+      freigabeVerantwortlicher2: d.freigabeVerantwortlicher2 || null,
+      emailFreigabeVerantwortlicher2: d.emailFreigabeVerantwortlicher2 || null,
+      kundenprofilId: result.kundenprofil.id,
+      adminLink,
+    });
+    await sendEmail({
+      to: "kontakt@jonathanscheele.de",
+      subject: `Neues Onboarding: ${d.unternehmensname}`,
+      text: `${d.unternehmensname} hat das Onboarding-Formular ausgefüllt.\n\nIm CRM öffnen: ${adminLink}`,
+      html,
+    });
+  } catch (e) {
+    console.error("[onboarding] Admin-Benachrichtigung fehlgeschlagen:", e);
+  }
+
+  // ── SMS-Benachrichtigung ───────────────────────────────────────────────────
+  try {
+    await sendSms(ADMIN_PHONE, `📋 Neues Onboarding: ${d.unternehmensname}`);
+  } catch (e) {
+    console.error("[onboarding] SMS fehlgeschlagen:", e);
   }
 
   return Response.json({ success: true, kundenprofilId: result.kundenprofil.id }, { status: 201 });

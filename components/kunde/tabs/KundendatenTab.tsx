@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ModalPortal from "@/components/ModalPortal";
 import KundenprofilSektionen, { KundenprofilFelder } from "@/components/shared/KundenprofilSektionen";
 import { useT, useLang } from "@/lib/i18n";
 
@@ -15,7 +16,7 @@ type Kundendaten = {
 };
 
 const TAG_FARBEN: Record<string, string> = {
-  Zielgruppe: "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Zielgruppe: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   "Allgemeine Informationen": "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   Drehtag: "bg-gray-100 dark:bg-gray-700/40 text-gray-600 dark:text-gray-300",
   Produkte: "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
@@ -74,6 +75,7 @@ function HinzufuegenModal({
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4" onClick={onSchliessen}>
       <div className="glass-modal rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
@@ -118,6 +120,7 @@ function HinzufuegenModal({
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -232,6 +235,7 @@ export default function KundendatenTab({
       )}
 
       {ausgewaehlt && (
+        <ModalPortal>
         <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setAusgewaehlt(null)}>
           <div className="glass-modal rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
@@ -243,6 +247,7 @@ export default function KundendatenTab({
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {modalOffen && kundenprofilId && (

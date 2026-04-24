@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ModalPortal from "@/components/ModalPortal";
 
 const PLATTFORMEN = ["Instagram", "Facebook", "TikTok", "YouTube", "Sonstiges"];
 const CONTENT_TYPEN = ["Reel", "Story", "Bild", "Karussell"];
@@ -119,6 +120,7 @@ export default function ArchivEintragModal({ kundenprofilId, eintrag, onClose }:
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div className="glass-modal rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto " onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b border-divider flex items-center justify-between">
@@ -295,5 +297,6 @@ export default function ArchivEintragModal({ kundenprofilId, eintrag, onClose }:
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 }

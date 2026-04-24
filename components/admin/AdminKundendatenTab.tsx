@@ -16,7 +16,7 @@ type Kundendaten = {
 };
 
 const TAG_FARBEN: Record<string, string> = {
-  Zielgruppe:                 "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Zielgruppe:                 "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   "Allgemeine Informationen": "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   Drehtag:                    "bg-gray-100 dark:bg-gray-700/40 text-gray-600 dark:text-gray-300",
   Produkte:                   "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-300",
@@ -42,6 +42,28 @@ export default function AdminKundendatenTab({
   const [veraltetZeigen, setVeraltetZeigen] = useState(false);
   const [modalOffen, setModalOffen] = useState(false);
   const [ausgewaehlt, setAusgewaehlt] = useState<Kundendaten | null>(null);
+
+  function handleDownload() {
+    const exportData = {
+      kundenprofil: profil ?? null,
+      notizen: daten.map((d) => ({
+        beschreibung: d.beschreibung,
+        inhalt: d.inhalt,
+        tags: d.tags,
+        datum: d.datum ? new Date(d.datum).toISOString().slice(0, 10) : null,
+        veraltet: d.veraltet,
+        hinzugefuegtVon: d.hinzugefuegtVon,
+      })),
+      exportiertAm: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kundendaten-${kundenprofilId}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const alleTags = Array.from(new Set(daten.flatMap((d) => d.tags)));
 
@@ -69,14 +91,26 @@ export default function AdminKundendatenTab({
             {t.kundendatenTab.notizen}
           </button>
         </div>
-        {ansicht === "notizen" && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => { setAusgewaehlt(null); setModalOffen(true); }}
-            className="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 bg-elevated border border-divider hover:bg-card text-muted hover:text-fg text-sm px-3 py-1.5 rounded-lg transition-colors"
+            title="Alle Kundendaten als JSON herunterladen"
           >
-            {t.kundendatenTab.eintragHinzufuegenBtn}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+            </svg>
+            Download
           </button>
-        )}
+          {ansicht === "notizen" && (
+            <button
+              onClick={() => { setAusgewaehlt(null); setModalOffen(true); }}
+              className="bg-accent hover:bg-accent-hover text-white text-sm px-4 py-1.5 rounded-lg transition-colors"
+            >
+              {t.kundendatenTab.eintragHinzufuegenBtn}
+            </button>
+          )}
+        </div>
       </div>
 
       {ansicht === "profil" && profil && <KundenprofilSektionen profil={profil} />}

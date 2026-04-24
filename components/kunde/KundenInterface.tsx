@@ -183,10 +183,10 @@ export default function KundenInterface({ kundenprofil, kundenRolle = "Inhaber",
             <img src="/logo.png" alt="JS Media" width={28} height={28} className="dark:hidden opacity-80 shrink-0" />
             <img src="/logo-white.png" alt="JS Media" width={28} height={28} className="hidden dark:block opacity-80 shrink-0" />
             <div>
-              <h1 className="font-semibold text-sm sm:text-base text-fg">
+              <h1 className="font-serif font-bold italic text-fg text-sm sm:text-lg tracking-tight">
                 {kundenprofil.unternehmensname ?? t.kundeInterface.meinInterface}
               </h1>
-              <p className="text-subtle text-xs hidden sm:block">{t.kundeInterface.dashboard}</p>
+              <p className="text-subtle text-xs hidden sm:block tracking-wide">{t.kundeInterface.dashboard}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

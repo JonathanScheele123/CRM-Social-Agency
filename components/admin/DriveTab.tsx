@@ -101,6 +101,10 @@ export default function DriveTab({ cloudLink }: { cloudLink: string | null }) {
   const [pfad, setPfad] = useState<BreadcrumbItem[]>(() =>
     rootFolderId ? [{ id: rootFolderId, name: "root" }] : []
   );
+
+  useEffect(() => {
+    if (rootFolderId) setPfad([{ id: rootFolderId, name: "root" }]);
+  }, [rootFolderId]);
   const [dateien, setDateien] = useState<DriveFile[]>([]);
   const [laden, setLaden] = useState(false);
   const [fehler, setFehler] = useState("");
@@ -126,11 +130,11 @@ export default function DriveTab({ cloudLink }: { cloudLink: string | null }) {
     setFehler("");
     try {
       const res = await fetch(`/api/admin/drive?folderId=${folderId}`);
-      if (!res.ok) throw new Error(t.driveTab.fehlerLaden);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.fehler ?? t.driveTab.fehlerLaden);
       setDateien(data.files ?? []);
-    } catch {
-      setFehler(t.driveTab.fehlerLaden);
+    } catch (err) {
+      setFehler(err instanceof Error ? err.message : t.driveTab.fehlerLaden);
     } finally {
       setLaden(false);
     }

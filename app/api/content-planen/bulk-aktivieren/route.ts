@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const ids = ideen.map(i => i.id);
 
-  await prisma.$transaction([
+  await Promise.all([
     ...ideen.map(idee =>
       prisma.kalenderEintrag.create({
         data: {
@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
         },
       })
     ),
-    prisma.contentIdea.deleteMany({ where: { id: { in: ids } } }),
   ]);
+  await prisma.contentIdea.deleteMany({ where: { id: { in: ids } } });
 
   // ── E-Mail an alle Benutzer senden ──────────────────────────────────────────
   try {

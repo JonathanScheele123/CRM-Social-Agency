@@ -286,7 +286,7 @@ export default function KundeDetailView({ kunde, alleKunden }: KundeDetailProps)
           </PullToRefresh>
         )}
         {aktuellerTab === "daten" && <PullToRefresh><AdminKundendatenTab daten={kunde.kundendaten} kundenprofilId={kunde.id} profil={kunde} /></PullToRefresh>}
-        {aktuellerTab === "planen" && <PullToRefresh><ContentPlanenTab ideen={sharedIdeen} kundenprofilId={kunde.id} cloudLink={kunde.cloudLink} onIdeaAktiviert={ideaEntfernen} /></PullToRefresh>}
+        {aktuellerTab === "planen" && <PullToRefresh><ContentPlanenTab ideen={sharedIdeen} kundenprofilId={kunde.id} cloudLink={kunde.cloudLink} onIdeaAktiviert={ideaEntfernen} drehtag={(kunde as any).drehtag ?? null} drehtageAdresse={(kunde as any).drehtageAdresse ?? null} drehtageStatus={(kunde as any).drehtageStatus ?? null} /></PullToRefresh>}
         {aktuellerTab === "archiv" && <PullToRefresh><AdminArchivTab eintraege={kunde.archivEintraege} kundenprofilId={kunde.id} /></PullToRefresh>}
         {aktuellerTab === "drive" && <DrivePostfachBereich cloudLink={kunde.cloudLink} kundenprofilId={kunde.id} />}
         {aktuellerTab === "social" && <PullToRefresh><SocialAccountsTab kundenprofilId={kunde.id} /></PullToRefresh>}

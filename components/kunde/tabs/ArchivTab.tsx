@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ModalPortal from "@/components/ModalPortal";
 import { useT, useLang } from "@/lib/i18n";
 
 type Kommentar = {
@@ -24,8 +25,8 @@ type ArchivEintrag = {
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
@@ -109,6 +110,7 @@ export default function ArchivTab({ eintraege }: { eintraege: ArchivEintrag[] })
 
       {/* Detail-Modal */}
       {ausgewaehlt && (
+        <ModalPortal>
         <div
           className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setAusgewaehlt(null)}
@@ -197,6 +199,7 @@ export default function ArchivTab({ eintraege }: { eintraege: ArchivEintrag[] })
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

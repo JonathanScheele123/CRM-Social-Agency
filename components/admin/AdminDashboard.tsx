@@ -30,7 +30,7 @@ type FehlerLogEintrag = {
 };
 
 const KATEGORIE_FARBEN: Record<string, string> = {
-  "A-Kunde":     "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-500/30",
+  "A-Kunde":     "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30",
   "B-Kunde":     "bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/30",
   "C-Kunde":     "bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-500/30",
   Bestandskunde: "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-500/30",
@@ -234,6 +234,10 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
   const [loeschKandidat, setLoeschKandidat] = useState<KundenUebersicht | null>(null);
   const [loeschLaden, setLoeschLaden] = useState(false);
   const [lokalKunden, setLokalKunden] = useState(kunden);
+  const [einladenOffen, setEinladenOffen] = useState(false);
+  const [einladenEmail, setEinladenEmail] = useState("");
+  const [einladenLaden, setEinladenLaden] = useState(false);
+  const [einladenStatus, setEinladenStatus] = useState<"idle" | "ok" | "fehler">("idle");
 
   useEffect(() => { setLokalKunden(kunden); }, [kunden]);
 
@@ -248,6 +252,32 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
     const res = await fetch(`/api/admin/kunden/${loeschKandidat.id}`, { method: "DELETE" });
     setLoeschLaden(false);
     if (res.ok) { setLokalKunden(prev => prev.filter(k => k.id !== loeschKandidat.id)); setLoeschKandidat(null); }
+  }
+
+  async function onboardingEinladen() {
+    if (!einladenEmail) return;
+    setEinladenLaden(true);
+    setEinladenStatus("idle");
+    try {
+      const { onboardingEinladungEmailHtml } = await import("@/lib/onboarding-einladung-email");
+      const formularLink = `${window.location.origin}/formular/onboarding`;
+      const html = onboardingEinladungEmailHtml({ name: einladenEmail, formularLink, passwort: "onboarding123" });
+      const res = await fetch("/api/email/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: einladenEmail,
+          subject: "Ihr Onboarding-Formular – JS Media",
+          html,
+          text: `Bitte füllen Sie unser Onboarding-Formular aus: ${formularLink}\nPasswort: onboarding123`,
+        }),
+      });
+      setEinladenStatus(res.ok ? "ok" : "fehler");
+    } catch {
+      setEinladenStatus("fehler");
+    } finally {
+      setEinladenLaden(false);
+    }
   }
 
   const gefilterteKunden = lokalKunden.filter(k =>
@@ -270,7 +300,7 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="JS Media" width={32} height={32} className="dark:hidden opacity-90" />
           <img src="/logo-white.png" alt="JS Media" width={32} height={32} className="hidden dark:block opacity-90" />
-          <span className="text-subtle text-sm hidden sm:inline">{t.nav.admin}</span>
+          <span className="font-serif font-bold italic text-fg text-base hidden sm:inline tracking-tight">{t.nav.admin}</span>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => router.push("/admin/kunden/neu")}
@@ -298,14 +328,14 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
         <div>
-          <h2 className="text-base font-semibold text-fg mb-3">{t.nav.formulare}</h2>
+          <h2 className="font-serif text-xl font-bold italic text-fg mb-3 tracking-tight">{t.nav.formulare}</h2>
           <div className="space-y-2">
-            <div className="bg-card border border-divider rounded-2xl px-5 py-4 flex items-center justify-between gap-3">
+            <div className="bg-card border border-divider rounded-2xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-fg">{t.adminDashboard.neukunden}</p>
                 <p className="text-xs text-subtle mt-0.5">/formular/onboarding</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs px-2.5 py-1.5 rounded-lg bg-elevated border border-divider text-subtle font-mono select-all">
                   onboarding123
                 </span>
@@ -313,6 +343,11 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
                   onClick={() => copyLink(`${window.location.origin}/formular/onboarding`, "onboarding")}
                   className="text-xs px-3 py-1.5 rounded-lg bg-elevated border border-divider text-muted hover:text-fg transition-colors">
                   {kopiert === "onboarding" ? t.common.kopiert : t.common.kopieren}
+                </button>
+                <button
+                  onClick={() => { setEinladenOffen(true); setEinladenEmail(""); setEinladenStatus("idle"); }}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white transition-colors font-medium">
+                  Einladen
                 </button>
               </div>
             </div>
@@ -333,7 +368,7 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-fg">{t.adminDashboard.kundenInterfaces}</h2>
+            <h2 className="font-serif text-2xl font-bold italic text-fg tracking-tight">{t.adminDashboard.kundenInterfaces}</h2>
             <input
               type="text"
               value={suche}
@@ -360,7 +395,7 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="text-xs text-subtle mb-1">#{kunde.kundenNr}</p>
-                    <h3 className="font-semibold text-fg group-hover:text-accent transition-colors">
+                    <h3 className="font-serif font-bold italic text-fg group-hover:text-accent transition-colors tracking-tight">
                       {kunde.unternehmensname ?? t.adminDashboard.unbenannt}
                     </h3>
                   </div>
@@ -423,6 +458,47 @@ export default function AdminDashboard({ kunden, fehlerLogs }: { kunden: KundenU
           onBestaetigen={kundeLoeschen}
           laden={loeschLaden}
         />
+      )}
+
+      {einladenOffen && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-card border border-divider rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="font-semibold text-fg mb-1">Onboarding-Formular senden</h3>
+            <p className="text-sm text-muted mb-5">
+              Der Kunde erhält eine E-Mail mit dem Link zum Formular und dem Passwort.
+            </p>
+            <input
+              type="email"
+              value={einladenEmail}
+              onChange={e => { setEinladenEmail(e.target.value); setEinladenStatus("idle"); }}
+              placeholder="kunde@beispiel.de"
+              className="w-full bg-elevated border border-divider text-fg text-sm rounded-xl px-3 py-2.5 placeholder:text-subtle focus:outline-none focus:border-accent transition-colors mb-4"
+              onKeyDown={e => { if (e.key === "Enter") onboardingEinladen(); }}
+              autoFocus
+            />
+            {einladenStatus === "ok" && (
+              <p className="text-sm text-green-600 dark:text-green-400 mb-3">E-Mail wurde erfolgreich gesendet.</p>
+            )}
+            {einladenStatus === "fehler" && (
+              <p className="text-sm text-red-600 dark:text-red-400 mb-3">Fehler beim Senden. Bitte erneut versuchen.</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setEinladenOffen(false)}
+                className="px-4 py-2 rounded-lg text-sm text-muted hover:text-fg transition-colors">
+                {einladenStatus === "ok" ? "Schließen" : "Abbrechen"}
+              </button>
+              {einladenStatus !== "ok" && (
+                <button
+                  onClick={onboardingEinladen}
+                  disabled={einladenLaden || !einladenEmail}
+                  className="px-4 py-2 rounded-lg text-sm bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-50 font-medium">
+                  {einladenLaden ? "Wird gesendet…" : "Senden"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

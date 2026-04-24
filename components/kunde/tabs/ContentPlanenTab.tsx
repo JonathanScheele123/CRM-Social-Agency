@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
+import ModalPortal from "@/components/ModalPortal";
+import DrehtagModal from "@/components/admin/DrehtagModal";
 
 type ContentIdea = {
   id: string;
@@ -26,8 +28,8 @@ type DriveFile = {
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
@@ -120,6 +122,7 @@ function DriveAuswahlModal({
   const files = (dateien ?? []).filter(f => f.mimeType !== "application/vnd.google-apps.folder");
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 glass-overlay z-[60] flex items-center justify-center p-4" onClick={onSchliessen}>
       <div className="glass-modal rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
@@ -186,6 +189,7 @@ function DriveAuswahlModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
@@ -436,13 +440,20 @@ export default function ContentPlanenTab({
   kundenprofilId,
   cloudLink,
   onIdeaAktiviert,
+  drehtag,
+  drehtageAdresse,
+  drehtageStatus,
 }: {
   ideen: ContentIdea[];
   kundenprofilId: string;
   cloudLink?: string | null;
   onIdeaAktiviert?: (id: string) => void;
+  drehtag?: Date | null;
+  drehtageAdresse?: string | null;
+  drehtageStatus?: string | null;
 }) {
   const router = useRouter();
+  const [drehtagModalOffen, setDrehtagModalOffen] = useState(false);
   const [ideen, setIdeen] = useState(
     initialIdeen.filter(i => i.status === "Angenommen")
   );
@@ -492,8 +503,52 @@ export default function ContentPlanenTab({
     );
   }
 
+  const hatAktivenDrehtag = drehtag && drehtageStatus === "geplant";
+
   return (
     <div>
+      {/* Drehtag-Bereich */}
+      <div className={`flex items-center justify-between gap-4 mb-5 p-4 rounded-2xl border ${hatAktivenDrehtag ? "bg-accent/5 border-accent/20" : "bg-elevated border-divider"}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${hatAktivenDrehtag ? "bg-accent/15" : "bg-divider"}`}>
+            <svg className={`w-4 h-4 ${hatAktivenDrehtag ? "text-accent" : "text-muted"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.869V6a1 1 0 00-1-1H4a1 1 0 00-1 1v2.869a1 1 0 00.447.832L8 10m7 0v10H9V10m6 0H9" />
+              <rect x="3" y="4" width="18" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"none"}}/>
+            </svg>
+          </div>
+          {hatAktivenDrehtag && drehtag ? (
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-0.5">Drehtag geplant</p>
+              <p className="text-sm font-semibold text-fg">
+                {new Date(drehtag).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+                &nbsp;&middot;&nbsp;
+                {new Date(drehtag).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+              </p>
+              {drehtageAdresse && <p className="text-xs text-muted truncate">{drehtageAdresse}</p>}
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm font-medium text-fg">Kein Drehtag geplant</p>
+              <p className="text-xs text-muted">Termin festlegen und automatisch E-Mail senden</p>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => setDrehtagModalOffen(true)}
+          className={`shrink-0 text-sm font-semibold px-4 py-2 rounded-xl transition-colors ${hatAktivenDrehtag ? "bg-accent/15 hover:bg-accent/25 text-accent" : "bg-accent hover:bg-accent/90 text-white"}`}
+        >
+          {hatAktivenDrehtag ? "Bearbeiten" : "Drehtag planen"}
+        </button>
+      </div>
+
+      {drehtagModalOffen && (
+        <DrehtagModal
+          kundenprofilId={kundenprofilId}
+          aktuell={{ drehtag: drehtag ?? null, drehtageAdresse: drehtageAdresse ?? null, drehtageStatus: drehtageStatus ?? null }}
+          onClose={() => setDrehtagModalOffen(false)}
+        />
+      )}
+
       <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
           <h2 className="font-semibold text-lg text-fg">Content planen</h2>

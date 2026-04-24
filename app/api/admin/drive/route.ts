@@ -14,15 +14,22 @@ export async function GET(req: NextRequest) {
     return Response.json({ fehler: "Ungültige folderId." }, { status: 400 });
   }
 
-  const drive = getDriveClient();
-  const res = await drive.files.list({
-    q: `'${folderId}' in parents and trashed = false`,
-    fields: "files(id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink)",
-    orderBy: "folder,name",
-    pageSize: 200,
-  });
-
-  return Response.json({ files: res.data.files ?? [] });
+  try {
+    const drive = getDriveClient();
+    const res = await drive.files.list({
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: "files(id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink)",
+      orderBy: "folder,name",
+      pageSize: 200,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+    return Response.json({ files: res.data.files ?? [] });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[Drive GET]", msg);
+    return Response.json({ fehler: msg, files: [] }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -45,6 +52,7 @@ export async function POST(req: NextRequest) {
   const stream = Readable.from(buffer);
 
   const res = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name: file.name,
       parents: [folderId],
@@ -76,6 +84,7 @@ export async function PUT(req: NextRequest) {
 
   const drive = getDriveClient();
   const res = await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name: name.trim(),
       mimeType: "application/vnd.google-apps.folder",

@@ -22,6 +22,7 @@ export type KundenprofilFormDaten = {
   freigabeVerantwortlicher: string;
   emailFreigabeVerantwortlicher: string;
   cloudLink: string;
+  kundeDriveLink: string;
   zusatzlinks: string;
   vertragsstart: string;
   statusKunde: string;
@@ -70,7 +71,7 @@ export const LEERES_FORMULAR: KundenprofilFormDaten = {
   emailDirekt: "", socialMediaKanaele: "",
   linkInstagram: "", linkFacebook: "", linkTikTok: "", linkYouTube: "",
   freigabeVerantwortlicher: "", emailFreigabeVerantwortlicher: "",
-  cloudLink: "", zusatzlinks: "",
+  cloudLink: "", kundeDriveLink: "", zusatzlinks: "",
   vertragsstart: "", statusKunde: "",
   vertraglicheFestgelegtePostAnzahl: "",
   limitReel: "", limitStory: "", limitBild: "", limitKarussell: "",
@@ -238,6 +239,7 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
     }
 
     const data = await res.json();
+    if (data.driveWarning) alert("Google Drive konnte nicht angelegt werden");
     setGespeichert(true);
 
     setTimeout(() => {
@@ -389,6 +391,11 @@ export default function KundenprofilForm({ initialDaten, modus, kundeId }: Props
                 <Feld label={kpf.emailFreigabe}>
                   <TextInput name="emailFreigabeVerantwortlicher" wert={formDaten.emailFreigabeVerantwortlicher} onChange={onChange} placeholder="freigabe@unternehmen.de" />
                 </Feld>
+                <VollBreit>
+                  <Feld label={kpf.kundeDriveLink}>
+                    <TextInput name="kundeDriveLink" wert={formDaten.kundeDriveLink} onChange={onChange} placeholder={kpf.cloudLinkP} />
+                  </Feld>
+                </VollBreit>
                 <VollBreit>
                   <Feld label={kpf.cloudLink}>
                     <TextInput name="cloudLink" wert={formDaten.cloudLink} onChange={onChange} placeholder={kpf.cloudLinkP} />

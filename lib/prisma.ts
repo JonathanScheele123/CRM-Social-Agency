@@ -1,13 +1,12 @@
-import { PrismaClient } from "@/app/generated/prisma/wasm";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "prisma-wasm-edge";
+import { PrismaNeonHTTP } from "@prisma/adapter-neon";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-function createPrismaClient() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-  return new PrismaClient({ adapter });
-}
-
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// PrismaNeonHTTP is stateless HTTP — creating a fresh instance per request
+// is safe and avoids cross-request promise contamination in Cloudflare Workers.
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    const adapter = new PrismaNeonHTTP(process.env.DATABASE_URL!, {});
+    const client = new PrismaClient({ adapter });
+    return (client as unknown as Record<string | symbol, unknown>)[prop as string | symbol];
+  },
+});

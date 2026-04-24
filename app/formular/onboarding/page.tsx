@@ -80,7 +80,7 @@ export default function OnboardingFormularPage() {
     emailFreigabeVerantwortlicher: "",
     freigabeVerantwortlicher2: "",
     emailFreigabeVerantwortlicher2: "",
-    cloudLink: "",
+    kundeDriveLink: "",
     zusatzlinks: "",
   });
 
@@ -241,8 +241,8 @@ export default function OnboardingFormularPage() {
 
                 <div>
                   <label className={labelClass}>Cloud-Link (Medien / Dateien)</label>
-                  <input type="url" value={form.cloudLink}
-                    onChange={e => set("cloudLink", e.target.value)}
+                  <input type="url" value={form.kundeDriveLink}
+                    onChange={e => set("kundeDriveLink", e.target.value)}
                     placeholder="https://drive.google.com/..." className={inputClass} />
                 </div>
 

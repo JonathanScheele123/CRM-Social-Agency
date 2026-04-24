@@ -1,6 +1,11 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { sendEmail } from "@/lib/email";
+import { sendSms } from "@/lib/sms";
+import { benachrichtigungIdeenGesperrtHtml } from "@/lib/benachrichtigung-ideen-gesperrt-email";
+
+const ADMIN_PHONE = "+4917184688848";
 
 const ERLAUBTE_STATUS = ["Offen", "Angenommen", "Verworfen"];
 
@@ -157,10 +162,54 @@ export async function PATCH(
       }
 
       if (limitErreicht && !profil.limitGesperrtAb) {
+        const gesperrtBis = new Date(Date.now() + 10 * 60 * 1000);
         await prisma.kundenprofil.update({
           where: { id: kundenprofilId },
-          data: { limitGesperrtAb: new Date(Date.now() + 10 * 60 * 1000) },
+          data: { limitGesperrtAb: gesperrtBis },
         });
+
+        // Admin-Benachrichtigung: Freigabe-Limit gesperrt
+        let unternehmensname = "Unbekannt";
+        try {
+          const profilDetails = await prisma.kundenprofil.findUnique({
+            where: { id: kundenprofilId },
+            select: { unternehmensname: true },
+          });
+          const base = (process.env.NEXTAUTH_URL ?? "https://crm.jonathanscheele.de").replace(/\/$/, "");
+          const adminLink = `${base}/admin/kunden/${kundenprofilId}`;
+          unternehmensname = profilDetails?.unternehmensname ?? "Unbekannt";
+
+          const html = benachrichtigungIdeenGesperrtHtml({
+            unternehmensname,
+            angenommenGesamt,
+            limitGesamt: profil.vertraglicheFestgelegtePostAnzahl,
+            limitReel: profil.limitReel,
+            limitStory: profil.limitStory,
+            limitBild: profil.limitBild,
+            limitKarussell: profil.limitKarussell,
+            angenommenReel: angenommenProTyp["Reel"] ?? 0,
+            angenommenStory: angenommenProTyp["Story"] ?? 0,
+            angenommenBild: angenommenProTyp["Bild"] ?? 0,
+            angenommenKarussell: angenommenProTyp["Karussell"] ?? 0,
+            adminLink,
+            gesperrtBis,
+          });
+
+          await sendEmail({
+            to: "kontakt@jonathanscheele.de",
+            subject: `Content-Ideen gesperrt: ${unternehmensname}`,
+            text: `${unternehmensname} hat das monatliche Freigabe-Limit erreicht. Die Freigabe ist bis ${gesperrtBis.toLocaleString("de-DE", { timeZone: "Europe/Berlin" })} gesperrt.\n\nIm CRM öffnen: ${adminLink}`,
+            html,
+          });
+        } catch (mailErr) {
+          console.error("[status] Sperr-Benachrichtigung fehlgeschlagen:", mailErr);
+        }
+
+        try {
+          await sendSms(ADMIN_PHONE, `🔒 Content gesperrt: ${unternehmensname} hat das Freigabe-Limit erreicht.`);
+        } catch (smsErr) {
+          console.error("[status] SMS-Benachrichtigung fehlgeschlagen:", smsErr);
+        }
       } else if (!limitErreicht && profil.limitGesperrtAb) {
         await prisma.kundenprofil.update({
           where: { id: kundenprofilId },

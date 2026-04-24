@@ -20,12 +20,12 @@ type KalenderEintrag = {
 const STATUS_CONFIG = {
   Freigegeben: { bg: "bg-green-50 dark:bg-green-950/40",  border: "border-green-200 dark:border-green-600/40",  badge: "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300",  dot: "bg-green-500" },
   Abgelehnt:   { bg: "bg-red-50 dark:bg-red-950/30",      border: "border-red-200 dark:border-red-600/40",      badge: "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",          dot: "bg-red-500"   },
-  Ausstehend:  { bg: "bg-card",                           border: "border-divider",                             badge: "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",      dot: "bg-blue-500"  },
+  Ausstehend:  { bg: "bg-card",                           border: "border-divider",                             badge: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",      dot: "bg-gray-400 dark:bg-gray-500"  },
 };
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
@@ -287,7 +287,7 @@ export default function FreigabeTab({ eintraege: initialEintraege }: { eintraege
         ].map(({ label, anzeige, farbe }) => {
           const anzahl = eintraege.filter(e => (e.freigabeStatus || "Ausstehend") === label).length;
           const farbeKlasse = {
-            blue:  "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700/50 text-blue-700 dark:text-blue-300",
+            blue:  "bg-elevated border-divider text-muted",
             green: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700/50 text-green-700 dark:text-green-300",
             red:   "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700/50 text-red-700 dark:text-red-300",
           }[farbe];

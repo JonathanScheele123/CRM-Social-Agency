@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { bereinigeDaten } from "@/lib/kunden-felder";
+import { erstelleKundenOrdner } from "@/lib/drive";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -19,7 +20,18 @@ export async function POST(req: NextRequest) {
     const kunde = await prisma.kundenprofil.create({
       data: bereinigeDaten(daten),
     });
-    return Response.json({ id: kunde.id }, { status: 201 });
+
+    // Drive-Ordner synchron anlegen — fire-and-forget funktioniert nicht in CF Workers
+    let driveWarning = false;
+    try {
+      const driveUrl = await erstelleKundenOrdner(daten.unternehmensname.trim());
+      await prisma.kundenprofil.update({ where: { id: kunde.id }, data: { cloudLink: driveUrl } });
+    } catch (err) {
+      console.error("[Drive] Ordner-Erstellung fehlgeschlagen:", err instanceof Error ? err.message : err);
+      driveWarning = true;
+    }
+
+    return Response.json({ id: kunde.id, ...(driveWarning && { driveWarning: true }) }, { status: 201 });
   } catch (e) {
     console.error("[POST /api/admin/kunden]", e);
     return Response.json({ fehler: "Fehler beim Erstellen." }, { status: 500 });

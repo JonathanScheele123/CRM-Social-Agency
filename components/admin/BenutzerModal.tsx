@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ModalPortal from "@/components/ModalPortal";
 
 type Kundenprofil = { id: string; unternehmensname: string | null; kundenNr: number };
 
@@ -114,6 +115,7 @@ export default function BenutzerModal(props: Props) {
   }
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4"
       onClick={props.onClose}
@@ -261,5 +263,6 @@ export default function BenutzerModal(props: Props) {
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }

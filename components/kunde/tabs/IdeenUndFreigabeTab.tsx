@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef } from "react";
+import ModalPortal from "@/components/ModalPortal";
 import ContentIdeenTab from "./ContentIdeenTab";
 import FreigabeListeAnsicht, { FreigabeIdee, PostLimitsNachTyp } from "@/components/shared/FreigabeListeAnsicht";
 import { useT } from "@/lib/i18n";
@@ -80,6 +81,7 @@ function IdeaEinreichenModal({
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 glass-overlay z-50 flex items-end sm:items-center justify-center p-4" onClick={onSchliessen}>
       <div className="glass-modal rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
@@ -161,6 +163,7 @@ function IdeaEinreichenModal({
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 

@@ -38,8 +38,8 @@ export type PostLimitsNachTyp = {
 const CONTENT_TYP_KEYS: (keyof PostLimitsNachTyp)[] = ["Reel", "Story", "Bild", "Karussell"];
 
 const PLATTFORM_FARBEN: Record<string, string> = {
-  Instagram: "bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300",
-  Facebook:  "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300",
+  Instagram: "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
+  Facebook:  "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   TikTok:    "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300",
   YouTube:   "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300",
   Sonstiges: "bg-gray-100 dark:bg-gray-600/20 text-gray-500 dark:text-gray-400",
@@ -92,8 +92,8 @@ function FreigabeKarte({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300">
+              <span className="inline-block w-2 h-2 rounded-full bg-accent shrink-0" />
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-300">
                 {t.contentIdeen.offen}
               </span>
             </div>
