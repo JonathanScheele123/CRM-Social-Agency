@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     redirect_uri: REDIRECT_URI,
     scope: "pages_show_list,pages_read_engagement,instagram_basic,instagram_manage_insights",
     response_type: "code",
+    auth_type: "rerequest",
     state,
   });
 
