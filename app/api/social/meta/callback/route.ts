@@ -78,11 +78,19 @@ export async function GET(req: NextRequest) {
       }),
     });
     const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) throw new Error("No access token");
+    console.log("[social/meta] tokenData:", JSON.stringify({ has_token: !!tokenData.access_token, error: tokenData.error }));
+    if (!tokenData.access_token) throw new Error(`No access token: ${JSON.stringify(tokenData)}`);
 
     const longToken = await getLongLivedToken(tokenData.access_token);
+    console.log("[social/meta] longToken expires_in:", longToken.expires_in);
     const tokenExpiry = new Date(Date.now() + longToken.expires_in * 1000);
+
+    const pagesRes = await fetch(`https://graph.facebook.com/v21.0/me/accounts?fields=id,name&access_token=${longToken.access_token}`);
+    const pagesData = await pagesRes.json();
+    console.log("[social/meta] pages:", JSON.stringify(pagesData));
+
     const igAccounts = await getInstagramAccounts(longToken.access_token);
+    console.log("[social/meta] igAccounts count:", igAccounts.length, JSON.stringify(igAccounts.map(a => ({ id: a.igAccountId, handle: a.igUsername }))));
 
     if (igAccounts.length === 0) {
       const redirectUrl = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
