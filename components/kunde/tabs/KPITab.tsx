@@ -18,11 +18,96 @@ type SocialAccount = {
 };
 
 const PLATFORMS = [
-  { key: "instagram", label: "Instagram", icon: "📷", color: "from-purple-500 to-pink-500", connectsVia: "meta" },
-  { key: "facebook",  label: "Facebook",  icon: "📘", color: "from-blue-600 to-blue-400",  connectsVia: "meta" },
-  { key: "tiktok",    label: "TikTok",    icon: "🎵", color: "from-gray-800 to-gray-600",  connectsVia: "soon" },
-  { key: "youtube",   label: "YouTube",   icon: "▶️",  color: "from-red-600 to-red-400",    connectsVia: "soon" },
+  { key: "instagram", label: "Instagram", connectsVia: "manual" },
+  { key: "facebook",  label: "Facebook",  connectsVia: "soon" },
+  { key: "tiktok",    label: "TikTok",    connectsVia: "soon" },
+  { key: "youtube",   label: "YouTube",   connectsVia: "soon" },
 ];
+
+function ManualConnectModal({ kundenprofilId, onClose, onSaved }: {
+  kundenprofilId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [token, setToken] = useState("");
+  const [igIds, setIgIds] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    setLoading(true); setResult(null); setError(null);
+    const ids = igIds.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+    if (!token.trim() || ids.length === 0) { setError("Token und mindestens eine Account-ID erforderlich."); setLoading(false); return; }
+    const res = await fetch("/api/social/manual-connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token.trim(), igAccountIds: ids, kundenprofilId }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error ?? "Fehler"); return; }
+    if (data.saved?.length > 0) {
+      setResult(`✓ ${data.saved.map((a: { handle: string }) => `@${a.handle}`).join(", ")} verbunden`);
+      setTimeout(() => { onSaved(); onClose(); }, 1500);
+    } else {
+      setError(`Keine Accounts gefunden. ${data.errors?.[0]?.error ?? ""}`);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-card border border-divider rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-fg">Instagram manuell verbinden</h3>
+          <button onClick={onClose} className="text-muted hover:text-fg">✕</button>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/30 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-400 space-y-1">
+          <p className="font-medium">So geht's:</p>
+          <p>1. Öffne <strong>developers.facebook.com/tools/explorer</strong></p>
+          <p>2. Wähle <strong>JS Media Analytics</strong> → Token generieren</p>
+          <p>3. Token hier einfügen</p>
+          <p>4. Instagram Account-ID(s) eintragen (z.B. <strong>17841472079437597</strong>)</p>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted block mb-1">Access Token *</label>
+            <textarea
+              value={token}
+              onChange={e => setToken(e.target.value)}
+              placeholder="EAANJx6T..."
+              rows={3}
+              className="w-full bg-elevated border border-divider rounded-xl px-3 py-2 text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 font-mono resize-none"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted block mb-1">Instagram Account-ID(s) *</label>
+            <textarea
+              value={igIds}
+              onChange={e => setIgIds(e.target.value)}
+              placeholder={"17841472079437597\n17841407022284507"}
+              rows={3}
+              className="w-full bg-elevated border border-divider rounded-xl px-3 py-2 text-xs text-fg placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 font-mono resize-none"
+            />
+            <p className="text-xs text-subtle mt-1">Mehrere IDs zeilenweise oder durch Komma getrennt</p>
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        {result && <p className="text-xs text-green-500">{result}</p>}
+
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-muted hover:text-fg">Abbrechen</button>
+          <button onClick={handleSubmit} disabled={loading} className="px-4 py-2 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent/90 disabled:opacity-50">
+            {loading ? "Verbinde…" : "Verbinden"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Sparkline({ values, color = "#a855f7" }: { values: number[]; color?: string }) {
   if (values.length < 2) return null;
@@ -104,6 +189,7 @@ export default function KPITab({ kpis, isAdmin = false, kundenprofilId, kpisFrei
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [socialMsg, setSocialMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [showManualModal, setShowManualModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>("alle");
   const [vergleich, setVergleich] = useState(false);
 
@@ -281,16 +367,26 @@ export default function KPITab({ kpis, isAdmin = false, kundenprofilId, kpisFrei
               }
 
               return (
-                <a key={p.key} href={`/api/social/meta/connect?kundenprofilId=${kundenprofilId}`} className="flex flex-col items-center gap-2 group">
+                <button key={p.key} onClick={() => setShowManualModal(true)} className="flex flex-col items-center gap-2 group">
                   <div className="w-14 h-14 rounded-2xl bg-elevated border-2 border-dashed border-divider group-hover:border-accent/50 group-hover:bg-accent/5 flex items-center justify-center text-muted group-hover:text-accent transition-all">
                     {icons[p.key]}
                   </div>
                   <p className="text-xs text-muted group-hover:text-accent transition-colors text-center">{p.label}</p>
-                </a>
+                </button>
               );
             })}
           </div>
         </div>
+      )}
+
+      {showManualModal && kundenprofilId && (
+        <ManualConnectModal
+          kundenprofilId={kundenprofilId}
+          onClose={() => setShowManualModal(false)}
+          onSaved={() => {
+            fetch(`/api/social/${kundenprofilId}/accounts`).then(r => r.json()).then(d => { if (Array.isArray(d)) setSocialAccounts(d); });
+          }}
+        />
       )}
 
       {kpis.length === 0 ? (
