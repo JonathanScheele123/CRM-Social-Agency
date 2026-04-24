@@ -162,20 +162,25 @@ export async function uploadDriveFile(
   folderId: string,
   fileName: string,
   mimeType: string,
-  buffer: Buffer
+  data: ArrayBuffer
 ): Promise<unknown> {
   const token = await getAccessToken();
-  const metadata = JSON.stringify({ name: fileName, parents: [folderId] });
+  const enc = new TextEncoder();
   const boundary = "bound_" + Math.random().toString(36).slice(2);
-  const body = [
-    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${metadata}\r\n`,
-    `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`,
-    buffer,
-    `\r\n--${boundary}--`,
-  ];
-  const combined = Buffer.concat(
-    body.map((p) => (Buffer.isBuffer(p) ? p : Buffer.from(p as string)))
+  const metadata = JSON.stringify({ name: fileName, parents: [folderId] });
+
+  const pre = enc.encode(
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${metadata}\r\n` +
+    `--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
   );
+  const post = enc.encode(`\r\n--${boundary}--`);
+  const fileBytes = new Uint8Array(data);
+
+  const combined = new Uint8Array(pre.length + fileBytes.length + post.length);
+  combined.set(pre, 0);
+  combined.set(fileBytes, pre.length);
+  combined.set(post, pre.length + fileBytes.length);
+
   const res = await fetch(
     `${UPLOAD_API}/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,mimeType,size,modifiedTime,webViewLink`,
     {

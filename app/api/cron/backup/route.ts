@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 
     const folderId = await findOrCreateDriveFolder(rootFolderId, BACKUP_FOLDER_NAME);
     const json = JSON.stringify(backup, null, 2);
-    await uploadDriveFile(folderId, dateiname, "application/json", Buffer.from(json, "utf-8"));
+    await uploadDriveFile(folderId, dateiname, "application/json", new TextEncoder().encode(json).buffer as ArrayBuffer);
 
     return Response.json({ ok: true, datei: dateiname, kunden: kunden.length });
   } catch (err) {

@@ -45,8 +45,7 @@ export async function POST(req: NextRequest) {
   if (!file) return Response.json({ fehler: "Keine Datei angegeben." }, { status: 400 });
 
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await uploadDriveFile(folderId, file.name, file.type || "application/octet-stream", buffer);
+    const result = await uploadDriveFile(folderId, file.name, file.type || "application/octet-stream", await file.arrayBuffer());
     return Response.json({ file: result }, { status: 201 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
