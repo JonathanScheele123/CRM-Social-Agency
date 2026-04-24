@@ -1,6 +1,9 @@
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
+const APP_ID = process.env.META_APP_ID ?? "925546743581623";
+const REDIRECT_URI = process.env.META_REDIRECT_URI ?? "https://crm.jonathanscheele.de/api/social/meta/callback";
+
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user || session.user.rolle !== "ADMIN") {
@@ -15,12 +18,15 @@ export async function GET(req: NextRequest) {
   const state = Buffer.from(JSON.stringify({ kundenprofilId, ts: Date.now() })).toString("base64url");
 
   const params = new URLSearchParams({
-    client_id: process.env.META_APP_ID!,
-    redirect_uri: process.env.META_REDIRECT_URI!,
-    scope: "instagram_business_basic,instagram_business_manage_insights,instagram_business_manage_comments",
+    client_id: APP_ID,
+    redirect_uri: REDIRECT_URI,
+    scope: "pages_show_list,pages_read_engagement,instagram_basic,instagram_manage_insights",
     response_type: "code",
     state,
   });
 
-  return NextResponse.redirect(`https://api.instagram.com/oauth/authorize?${params}`);
+  const oauthUrl = `https://www.facebook.com/v21.0/dialog/oauth?${params}`;
+  console.log("[social/connect] redirecting to:", oauthUrl.substring(0, 120));
+
+  return NextResponse.redirect(oauthUrl);
 }
