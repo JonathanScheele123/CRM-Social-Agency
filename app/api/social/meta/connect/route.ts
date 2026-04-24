@@ -1,30 +1,8 @@
-import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
-const APP_ID = process.env.META_APP_ID ?? "925546743581623";
-const REDIRECT_URI = process.env.META_REDIRECT_URI ?? "https://crm.jonathanscheele.de/api/social/meta/callback";
-
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || session.user.rolle !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const kundenprofilId = req.nextUrl.searchParams.get("kundenprofilId");
-  if (!kundenprofilId) {
-    return NextResponse.json({ error: "kundenprofilId fehlt" }, { status: 400 });
-  }
-
-  const state = Buffer.from(JSON.stringify({ kundenprofilId, ts: Date.now() })).toString("base64url");
-
-  // Use Instagram OAuth directly (bypasses New Page Experience limitation)
-  const params = new URLSearchParams({
-    client_id: APP_ID,
-    redirect_uri: REDIRECT_URI,
-    scope: "instagram_basic,instagram_manage_insights,instagram_manage_comments",
-    response_type: "code",
-    state,
-  });
-
-  return NextResponse.redirect(`https://api.instagram.com/oauth/authorize?${params}`);
+  const kundenprofilId = req.nextUrl.searchParams.get("kundenprofilId") ?? "";
+  const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
+  url.searchParams.set("tab", "kpis");
+  return NextResponse.redirect(url);
 }
