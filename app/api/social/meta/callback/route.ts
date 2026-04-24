@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
   const error = req.nextUrl.searchParams.get("error");
 
   if (error || !code || !state) {
-    return NextResponse.redirect(new URL("/dashboard?social=error", req.url));
+    return new NextResponse(`<pre>FEHLER: error=${error}, code=${!!code}, state=${!!state}</pre>`, { headers: { "Content-Type": "text/html" } });
   }
 
   let kundenprofilId: string;
@@ -69,9 +69,11 @@ export async function GET(req: NextRequest) {
     const decoded = JSON.parse(Buffer.from(state, "base64url").toString());
     kundenprofilId = decoded.kundenprofilId;
     if (!kundenprofilId) throw new Error("missing id");
-  } catch {
-    return NextResponse.redirect(new URL("/dashboard?social=error", req.url));
+  } catch (e) {
+    return new NextResponse(`<pre>STATE FEHLER: ${e}</pre>`, { headers: { "Content-Type": "text/html" } });
   }
+
+  const debug: Record<string, unknown> = { kundenprofilId };
 
   try {
     const tokenRes = await fetch("https://graph.facebook.com/v21.0/oauth/access_token", {
@@ -80,19 +82,20 @@ export async function GET(req: NextRequest) {
       body: new URLSearchParams({ client_id: APP_ID, client_secret: APP_SECRET, redirect_uri: REDIRECT_URI, code }),
     });
     const tokenData = await tokenRes.json();
-    console.log("[social/cb] token:", JSON.stringify({ has_token: !!tokenData.access_token, error: tokenData.error }));
+    debug.tokenOk = !!tokenData.access_token;
+    debug.tokenError = tokenData.error;
     if (!tokenData.access_token) throw new Error(`No token: ${JSON.stringify(tokenData)}`);
 
     const longToken = await getLongLivedToken(tokenData.access_token);
+    debug.longTokenOk = !!longToken.access_token;
     if (!longToken.access_token) throw new Error(`No long token: ${JSON.stringify(longToken)}`);
 
     const { igAccounts, fbPages } = await getAccounts(longToken.access_token);
+    debug.igAccounts = igAccounts.map(a => ({ id: a.igAccountId, handle: a.igUsername }));
+    debug.fbPages = fbPages.map(p => ({ id: p.pageId, name: p.pageName }));
 
     if (igAccounts.length === 0 && fbPages.length === 0) {
-      const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-      url.searchParams.set("social", "kein-business-account");
-      url.searchParams.set("tab", "kpis");
-      return NextResponse.redirect(url);
+      return new NextResponse(`<pre style="font-family:monospace;padding:40px;background:#111;color:#f87171">KEIN ACCOUNT GEFUNDEN\n\n${JSON.stringify(debug, null, 2)}</pre>`, { headers: { "Content-Type": "text/html" } });
     }
 
     const expiry = new Date(Date.now() + longToken.expires_in * 1000);
@@ -113,15 +116,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-    url.searchParams.set("social", "success");
-    url.searchParams.set("tab", "kpis");
-    return NextResponse.redirect(url);
+    debug.saved = { ig: igAccounts.length, fb: fbPages.length };
+    return new NextResponse(`<pre style="font-family:monospace;padding:40px;background:#111;color:#4ade80">ERFOLG ✓\n\n${JSON.stringify(debug, null, 2)}</pre>`, { headers: { "Content-Type": "text/html" } });
+
   } catch (err) {
-    console.error("[social/cb] error:", String(err));
-    const url = new URL(`/admin/kunden/${kundenprofilId}`, req.url);
-    url.searchParams.set("social", "error");
-    url.searchParams.set("tab", "kpis");
-    return NextResponse.redirect(url);
+    debug.exception = String(err);
+    return new NextResponse(`<pre style="font-family:monospace;padding:40px;background:#111;color:#f87171">EXCEPTION\n\n${JSON.stringify(debug, null, 2)}</pre>`, { headers: { "Content-Type": "text/html" } });
   }
 }
