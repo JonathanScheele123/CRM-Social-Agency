@@ -2,6 +2,21 @@ const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const NO_COMPRESS = { "Accept-Encoding": "identity" };
 
+async function readJson(res: Response): Promise<unknown> {
+  const buf = await res.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  // Gzip magic bytes: 1f 8b
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    const ds = new DecompressionStream("gzip");
+    const writer = ds.writable.getWriter();
+    await writer.write(bytes);
+    await writer.close();
+    const text = await new Response(ds.readable).text();
+    return JSON.parse(text);
+  }
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
 function b64url(data: string | ArrayBuffer): string {
   const bytes =
     typeof data === "string"
@@ -63,11 +78,11 @@ async function getAccessToken(): Promise<string> {
   });
 
   if (!res.ok) {
-    const errData = await res.json().catch(() => null) as { error?: string; error_description?: string } | null;
+    const errData = await readJson(res).catch(() => null) as { error?: string; error_description?: string } | null;
     throw new Error(`Drive-Auth fehlgeschlagen: ${errData?.error_description ?? errData?.error ?? `HTTP ${res.status}`}`);
   }
 
-  const { access_token } = (await res.json()) as { access_token: string };
+  const { access_token } = (await readJson(res)) as { access_token: string };
   return access_token;
 }
 
@@ -82,10 +97,10 @@ async function drivePost(token: string, path: string, body: unknown): Promise<{ 
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
+    const err = await readJson(res).catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
     throw new Error(err?.error?.message ?? `Drive API Fehler ${res.status}`);
   }
-  return res.json();
+  return readJson(res) as Promise<{ id: string }>;
 }
 
 async function driveGet(token: string, path: string): Promise<{ id: string }> {
@@ -151,10 +166,10 @@ export async function getDriveFiles(folderId: string): Promise<unknown[]> {
     { headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS } }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
+    const err = await readJson(res).catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
     throw new Error(err?.error?.message ?? `Drive Fehler ${res.status}`);
   }
-  const data = (await res.json()) as { files?: unknown[] };
+  const data = (await readJson(res)) as { files?: unknown[] };
   return data.files ?? [];
 }
 
@@ -194,10 +209,10 @@ export async function uploadDriveFile(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
+    const err = await readJson(res).catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
     throw new Error(err?.error?.message ?? `Upload Fehler ${res.status}`);
   }
-  return res.json();
+  return readJson(res);
 }
 
 export async function createDriveFolder(folderId: string, name: string): Promise<unknown> {
@@ -235,7 +250,7 @@ export async function moveDriveFile(
     }
   );
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
+    const err = await readJson(res).catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
     throw new Error(err?.error?.message ?? `Verschieben fehlgeschlagen ${res.status}`);
   }
 }
@@ -258,7 +273,7 @@ export async function getDriveFileMeta(
     { headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS } }
   );
   if (!res.ok) throw new Error(`Meta-Abruf fehlgeschlagen: HTTP ${res.status}`);
-  return res.json();
+  return readJson(res) as Promise<{ thumbnailLink?: string; mimeType?: string }>;
 }
 
 export async function downloadDriveFile(fileId: string): Promise<{ buffer: ArrayBuffer; mimeType: string }> {
@@ -281,7 +296,7 @@ export async function findOrCreateDriveFolder(parentId: string, name: string): P
     { headers: { Authorization: `Bearer ${token}`, ...NO_COMPRESS } }
   );
   if (searchRes.ok) {
-    const data = (await searchRes.json()) as { files?: { id: string }[] };
+    const data = (await readJson(searchRes)) as { files?: { id: string }[] };
     if (data.files?.length) return data.files[0].id;
   }
   const folder = await drivePost(token, "/files?supportsAllDrives=true&fields=id", {
@@ -306,7 +321,7 @@ export async function updateDriveFile(
     body: JSON.stringify(options.name ? { name: options.name } : {}),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
+    const err = await readJson(res).catch(() => ({ error: { message: `HTTP ${res.status}` } })) as { error?: { message?: string } };
     throw new Error(err?.error?.message ?? `Update fehlgeschlagen ${res.status}`);
   }
 }
