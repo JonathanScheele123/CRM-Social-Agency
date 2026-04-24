@@ -2,6 +2,22 @@ const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const NO_COMPRESS = { "Accept-Encoding": "identity" };
 
+async function getUserAccessToken(): Promise<string> {
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", ...NO_COMPRESS },
+    body: new URLSearchParams({
+      client_id: process.env.GMAIL_CLIENT_ID!,
+      client_secret: process.env.GMAIL_CLIENT_SECRET!,
+      refresh_token: process.env.GOOGLE_DRIVE_REFRESH_TOKEN!,
+      grant_type: "refresh_token",
+    }),
+  });
+  const data = await readJson(res) as { access_token?: string; error?: string };
+  if (!data.access_token) throw new Error(`Drive-OAuth fehlgeschlagen: ${data.error ?? "kein Token"}`);
+  return data.access_token;
+}
+
 async function readJson(res: Response): Promise<unknown> {
   const buf = await res.arrayBuffer();
 
@@ -195,7 +211,7 @@ export async function uploadDriveFile(
   mimeType: string,
   data: ArrayBuffer
 ): Promise<unknown> {
-  const token = await getAccessToken();
+  const token = await getUserAccessToken();
   const enc = new TextEncoder();
   const boundary = "bound_" + Math.random().toString(36).slice(2);
   const metadata = JSON.stringify({ name: fileName, parents: [folderId] });
