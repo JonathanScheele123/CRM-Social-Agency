@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 const APP_ID = process.env.META_APP_ID ?? "925546743581623";
-const REDIRECT_URI = process.env.META_REDIRECT_URI ?? "https://crm.jonathanscheele.de/api/social/meta/callback";
+const REDIRECT_URI = "https://crm.jonathanscheele.de/api/social/meta/test-callback";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
